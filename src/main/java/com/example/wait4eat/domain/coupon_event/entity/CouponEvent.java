@@ -47,7 +47,8 @@ public class CouponEvent {
             BigDecimal discountAmount,
             int totalQuantity,
             int issuedQuantity,
-            LocalDateTime expiresAt
+            LocalDateTime expiresAt,
+            LocalDateTime createdAt
     ) {
         this.store = store;
         this.name = name;
@@ -55,5 +56,6 @@ public class CouponEvent {
         this.totalQuantity = totalQuantity;
         this.issuedQuantity = issuedQuantity;
         this.expiresAt = expiresAt;
+        this.createdAt = createdAt;
     }
 }
