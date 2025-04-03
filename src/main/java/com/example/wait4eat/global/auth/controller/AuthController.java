@@ -1,6 +1,8 @@
 package com.example.wait4eat.global.auth.controller;
 
+import com.example.wait4eat.global.auth.dto.request.SigninRequest;
 import com.example.wait4eat.global.auth.dto.request.SignupRequest;
+import com.example.wait4eat.global.auth.dto.response.SigninResponse;
 import com.example.wait4eat.global.auth.dto.response.SignupResponse;
 import com.example.wait4eat.global.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -21,5 +23,12 @@ public class AuthController {
             @Valid @RequestBody SignupRequest request
     ) {
         return ResponseEntity.ok(authService.signup(request));
+    }
+
+    @PostMapping("/api/v1/auth/signin")
+    public ResponseEntity<SigninResponse> signin(
+            @Valid @RequestBody SigninRequest request
+    ) {
+        return ResponseEntity.ok(authService.signin(request));
     }
 }

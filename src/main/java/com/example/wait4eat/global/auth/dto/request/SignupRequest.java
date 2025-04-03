@@ -13,7 +13,7 @@ public class SignupRequest {
     private UserRole role;
 
     @Builder
-    private SignupRequest(
+    public SignupRequest(
             String email,
             String password,
             String nickname,
