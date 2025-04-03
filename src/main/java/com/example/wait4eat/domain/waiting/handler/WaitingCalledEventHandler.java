@@ -24,8 +24,6 @@ public class WaitingCalledEventHandler {
                 event.getUserId(),
                 NotificationType.WAITING_CALLED
         );
-        eventPublisher.publishEvent(
-                new NotificationEvent(event.getUserId(), notification.getType())
-        );
+        eventPublisher.publishEvent(NotificationEvent.from(notification));
     }
 }
