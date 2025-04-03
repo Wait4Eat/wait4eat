@@ -7,10 +7,15 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notifications")
 @Getter
+@EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification {
 
@@ -27,7 +32,11 @@ public class Notification {
 
     private String text;
 
+    @Column(nullable = false)
     private Boolean isRead;
+
+    @CreatedDate
+    private LocalDateTime createdAt;
 
     @Builder
     public Notification(User user, NotificationType type, String text) {

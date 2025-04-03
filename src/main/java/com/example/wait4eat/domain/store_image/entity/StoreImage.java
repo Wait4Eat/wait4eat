@@ -7,10 +7,15 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "store_images")
 @Getter
+@EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StoreImage {
 
@@ -29,6 +34,9 @@ public class StoreImage {
     private String storedFileName;
 
     private String imageUrl;
+
+    @CreatedDate
+    private LocalDateTime createdAt;
 
     @Builder
     public StoreImage(Store store, User user, String storedFileName, String imageUrl) {

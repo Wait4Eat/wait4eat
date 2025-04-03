@@ -5,12 +5,13 @@ import com.example.wait4eat.domain.coupon.entity.Coupon;
 import com.example.wait4eat.domain.payment.enums.PaymentStatus;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
-import com.example.wait4eat.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,8 +19,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "payments")
 @Getter
+@EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Payment extends BaseTimeEntity {
+public class Payment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -55,6 +57,9 @@ public class Payment extends BaseTimeEntity {
     private LocalDateTime failedAt;
 
     private LocalDateTime cancelledAt;
+
+    @CreatedDate
+    private LocalDateTime createdAt;
 
     @Builder
     public Payment(

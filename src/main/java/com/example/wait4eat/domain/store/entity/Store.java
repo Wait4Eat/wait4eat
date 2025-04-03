@@ -1,20 +1,24 @@
 package com.example.wait4eat.domain.store.entity;
 
 import com.example.wait4eat.domain.user.entity.User;
-import com.example.wait4eat.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
 @Table(name = "stores")
 @Getter
+@EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Store extends BaseTimeEntity {
+public class Store {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,6 +41,12 @@ public class Store extends BaseTimeEntity {
     private String imageUrl;
 
     private int depositAmount;
+
+    @CreatedDate
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime modifiedAt;
 
     @Builder
     public Store(
