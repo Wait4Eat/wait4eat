@@ -17,6 +17,8 @@ public enum ExceptionType {
 
     // Forbidden
     NO_PERMISSION_ACTION(HttpStatus.FORBIDDEN, "권한이 없는 작업입니다."),
+    INVALID_USER_ROLE(HttpStatus.FORBIDDEN, "유효하지 않은 권한입니다."),
+
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 사용자를 찾을 수 없습니다."),
