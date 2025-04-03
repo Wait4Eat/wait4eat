@@ -7,6 +7,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,6 +16,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "coupons")
 @Getter
+@EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Coupon {
 
@@ -31,7 +34,11 @@ public class Coupon {
 
     private BigDecimal discountAmount;
 
+    @Column(nullable = false)
     private Boolean isUsed;
+
+    @CreatedDate
+    private LocalDateTime issuedAt;
 
     private LocalDateTime usedAt;
 
