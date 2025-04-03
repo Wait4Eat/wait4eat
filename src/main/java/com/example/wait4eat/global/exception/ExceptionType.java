@@ -31,6 +31,7 @@ public enum ExceptionType {
 
     // Store
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 가게를 찾을 수 없습니다."),
+    STORE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 가게를 생성한 사용자입니다."),
     STORE_NOT_MATCH_USER(HttpStatus.BAD_REQUEST,  "해당 유저의 가게가 아닙니다."),
 
     // Coupon
