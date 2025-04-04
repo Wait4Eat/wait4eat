@@ -2,6 +2,7 @@ package com.example.wait4eat.domain.store.entity;
 
 import com.example.wait4eat.domain.user.entity.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Null;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,25 +27,32 @@ public class Store {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
+    @Column(nullable = false)
     private User user;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private String address;
 
+    @Column(nullable = false)
     private LocalTime openTime;
 
+    @Column(nullable = false)
     private LocalTime closeTime;
 
     private String description;
 
     private String imageUrl;
 
+    @Column(nullable = false)
     private int depositAmount;
 
     private int waitingTeamCount; // 가게의 현재 웨이팅 팀 수
 
     @CreatedDate
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
