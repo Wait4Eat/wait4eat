@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 @Getter
 public class WaitingResponse {
+    private final Long waitingId;
     private final Long storeId;
     private final Long userId;
     private final int peopleCount;
@@ -20,6 +21,7 @@ public class WaitingResponse {
 
     @Builder
     private WaitingResponse(
+            Long waitingId,
             Long storeId,
             Long userId,
             int peopleCount,
@@ -29,6 +31,7 @@ public class WaitingResponse {
             LocalDateTime cancelledAt,
             LocalDateTime enteredAt
     ) {
+        this.waitingId = waitingId;
         this.storeId = storeId;
         this.userId = userId;
         this.peopleCount = peopleCount;
@@ -41,6 +44,7 @@ public class WaitingResponse {
 
     public static WaitingResponse from(Waiting waiting) {
         return WaitingResponse.builder()
+                .waitingId(waiting.getId())
                 .storeId(waiting.getStore().getId())
                 .userId(waiting.getUser().getId())
                 .peopleCount(waiting.getPeopleCount())
