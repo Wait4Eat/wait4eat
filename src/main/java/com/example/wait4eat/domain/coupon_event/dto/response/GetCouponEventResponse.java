@@ -1,6 +1,6 @@
 package com.example.wait4eat.domain.coupon_event.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.example.wait4eat.domain.coupon_event.entity.CouponEvent;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -38,6 +38,19 @@ public class GetCouponEventResponse {
         this.issuedQuantity = issuedQuantity;
         this.expiresAt = expiresAt;
         this.createdAt = createdAt;
+    }
+
+    public static GetCouponEventResponse from(CouponEvent couponEvent) {
+        return GetCouponEventResponse.builder()
+                .id(couponEvent.getId())
+                .storeId(couponEvent.getStore().getId())
+                .name(couponEvent.getName())
+                .discountAmount(couponEvent.getDiscountAmount())
+                .totalQuantity(couponEvent.getTotalQuantity())
+                .issuedQuantity(couponEvent.getIssuedQuantity())
+                .expiresAt(couponEvent.getExpiresAt())
+                .createdAt(couponEvent.getCreatedAt())
+                .build();
     }
 
 }

@@ -52,7 +52,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/stores/{storeId}/images").hasAuthority(UserRole.Authority.OWNER)
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/{storeId}/images").hasAuthority(UserRole.Authority.OWNER)
                         .requestMatchers(HttpMethod.POST, "/api/v1/stores/{storeId}/couponevents").hasAuthority(UserRole.Authority.OWNER)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/stores/{storeId}/couponevents/{eventId}").hasAuthority(UserRole.Authority.OWNER)
                         .anyRequest().authenticated()
                 )
                 .build();

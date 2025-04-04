@@ -7,6 +7,7 @@ import com.example.wait4eat.domain.coupon_event.entity.CouponEvent;
 import com.example.wait4eat.domain.coupon_event.repository.CouponEventRepository;
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
+import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class CouponEventService {
 
     @Transactional
     public CreateCouponEventResponse createCouponEvent(
+            AuthUser authUser,
             Long storeId,
             CreateCouponEventRequest request
     ) {
@@ -47,16 +49,7 @@ public class CouponEventService {
 
         CouponEvent savedCouponEvent = couponEventRepository.save(couponEvent);
 
-        return CreateCouponEventResponse.builder()
-                .id(savedCouponEvent.getId())
-                .storeId(savedCouponEvent.getStore().getId())
-                .name(savedCouponEvent.getName())
-                .discountAmount(savedCouponEvent.getDiscountAmount())
-                .totalQuantity(savedCouponEvent.getTotalQuantity())
-                .issuedQuantity(savedCouponEvent.getIssuedQuantity())
-                .expiresAt(savedCouponEvent.getExpiresAt())
-                .createdAt(savedCouponEvent.getCreatedAt())
-                .build();
+        return CreateCouponEventResponse.from(savedCouponEvent);
     }
 
     @Transactional(readOnly = true)
@@ -70,16 +63,7 @@ public class CouponEventService {
             throw new CustomException(ExceptionType.COUPON_EVENT_NOT_MATCH_STORE);
         }
 
-        return GetCouponEventResponse.builder()
-                .id(couponEvent.getId())
-                .storeId(couponEvent.getStore().getId())
-                .name(couponEvent.getName())
-                .discountAmount(couponEvent.getDiscountAmount())
-                .totalQuantity(couponEvent.getTotalQuantity())
-                .issuedQuantity(couponEvent.getIssuedQuantity())
-                .expiresAt(couponEvent.getExpiresAt())
-                .createdAt(couponEvent.getCreatedAt())
-                .build();
+        return GetCouponEventResponse.from(couponEvent);
     }
 
 }

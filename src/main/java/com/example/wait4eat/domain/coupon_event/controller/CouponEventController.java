@@ -4,9 +4,11 @@ import com.example.wait4eat.domain.coupon_event.dto.request.CreateCouponEventReq
 import com.example.wait4eat.domain.coupon_event.dto.response.CreateCouponEventResponse;
 import com.example.wait4eat.domain.coupon_event.dto.response.GetCouponEventResponse;
 import com.example.wait4eat.domain.coupon_event.service.CouponEventService;
+import com.example.wait4eat.global.auth.dto.AuthUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,13 +17,13 @@ public class CouponEventController {
 
     private final CouponEventService couponEventService;
 
-    // 사장 권한 추가 예정
     @PostMapping({"/api/v1/stores/{storeId}/couponevents"})
     public ResponseEntity<CreateCouponEventResponse> createCouponEvent(
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long storeId,
             @Valid @RequestBody CreateCouponEventRequest request
     ) {
-        return ResponseEntity.ok(couponEventService.createCouponEvent(storeId, request));
+        return ResponseEntity.ok(couponEventService.createCouponEvent(authUser, storeId, request));
     }
 
     @GetMapping("/api/v1/stores/{storeId}/couponevents/{couponEventId}")
