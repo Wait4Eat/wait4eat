@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.coupon_event.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -15,7 +16,9 @@ public class CreateCouponEventResponse {
     private final BigDecimal discountAmount;
     private final Integer totalQuantity;
     private final Integer issuedQuantity;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private final LocalDateTime expiresAt;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private final LocalDateTime createdAt;
 
     @Builder
@@ -38,4 +41,5 @@ public class CreateCouponEventResponse {
         this.expiresAt = expiresAt;
         this.createdAt = createdAt;
     }
+
 }

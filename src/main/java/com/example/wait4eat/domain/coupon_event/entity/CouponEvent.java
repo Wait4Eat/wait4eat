@@ -27,14 +27,18 @@ public class CouponEvent {
     @JoinColumn(name = "store_id")
     private Store store;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private BigDecimal discountAmount;
 
+    @Column(nullable = false)
     private int totalQuantity;
 
     private int issuedQuantity;
 
+    @Column(nullable = false)
     private LocalDateTime expiresAt;
 
     @CreatedDate
@@ -58,4 +62,5 @@ public class CouponEvent {
         this.expiresAt = expiresAt;
         this.createdAt = createdAt;
     }
+
 }

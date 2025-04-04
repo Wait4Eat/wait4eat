@@ -9,7 +9,6 @@ import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +29,7 @@ public class CouponEventService {
     ) {
         Store store = storeRepository.findById(storeId).orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
 
-        // 쿠폰이벤트는 한 번만 생성 가능(이미 진행 중인 쿠폰 이벤트가 있으면 예외 처리)
+        // 쿠폰이벤트는 한 번만 생성 가능(이미 진행 중인 쿠폰 이벤트가 있으면 예외 처리, 1가게 1쿠폰이기에 storeId로 유무 검증)
         boolean existsCouponEvent = couponEventRepository.existsByStoreId(storeId);
         if (existsCouponEvent) {
             throw new CustomException(ExceptionType.COUPON_EVENT_ALREADY_EXISTS);
@@ -82,4 +81,5 @@ public class CouponEventService {
                 .createdAt(couponEvent.getCreatedAt())
                 .build();
     }
+
 }

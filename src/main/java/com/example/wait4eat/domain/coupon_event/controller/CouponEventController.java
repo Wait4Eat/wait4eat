@@ -5,7 +5,6 @@ import com.example.wait4eat.domain.coupon_event.dto.response.CreateCouponEventRe
 import com.example.wait4eat.domain.coupon_event.dto.response.GetCouponEventResponse;
 import com.example.wait4eat.domain.coupon_event.service.CouponEventService;
 import jakarta.validation.Valid;
-import jakarta.websocket.server.PathParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,4 +31,5 @@ public class CouponEventController {
     ) {
         return ResponseEntity.ok(couponEventService.getCouponEvent(storeId, couponEventId));
     }
+
 }
