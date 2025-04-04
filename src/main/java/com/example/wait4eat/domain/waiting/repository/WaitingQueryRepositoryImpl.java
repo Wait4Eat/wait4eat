@@ -1,7 +1,9 @@
 package com.example.wait4eat.domain.waiting.repository;
 
 import com.example.wait4eat.domain.waiting.dto.response.WaitingResponse;
-import com.querydsl.core.types.Projections;
+import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -9,9 +11,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import static com.example.wait4eat.domain.user.entity.QUser.user;
 import static com.example.wait4eat.domain.waiting.entity.QWaiting.waiting;
 
 @Repository
@@ -21,10 +24,17 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<WaitingResponse> findWaitingsByStoreId(Long storeId, Pageable pageable) {
-        // ... (이전 코드와 동일한 쿼리 구현)
-        List<WaitingResponse> content = queryFactory
-                .select(Projections.constructor(WaitingResponse.class,
+    public Page<WaitingResponse> findWaitingsByStoreId(Long storeId, WaitingStatus status, Pageable pageable) {
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(waiting.store.id.eq(storeId));
+
+        if (status != null) {
+            builder.and(waiting.status.eq(status));
+        }
+
+        List<Tuple> rows = queryFactory
+                .select(
                         waiting.store.id,
                         waiting.user.id,
                         waiting.peopleCount,
@@ -33,22 +43,35 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                         waiting.calledAt,
                         waiting.cancelledAt,
                         waiting.enteredAt
-                ))
+                )
                 .from(waiting)
-                .join(waiting.user, user) // N+1 문제 해결을 위한 JOIN
-                .where(waiting.store.id.eq(storeId))
-                .orderBy(waiting.createdAt.desc()) // 필요에 따라 정렬 조건 추가
+                .where(builder)
+                .orderBy(waiting.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
+        List<WaitingResponse> content = new ArrayList<>();
+        for (Tuple row : rows) {
+            WaitingResponse waitingResponse = WaitingResponse.builder()
+                    .storeId(row.get(waiting.store.id))
+                    .userId(row.get(waiting.user.id))
+                    .peopleCount(row.get(waiting.peopleCount))
+                    .status(row.get(waiting.status))
+                    .createdAt(row.get(waiting.createdAt))
+                    .calledAt(row.get(waiting.calledAt))
+                    .cancelledAt(row.get(waiting.cancelledAt))
+                    .enteredAt(row.get(waiting.enteredAt))
+                    .build();
+            content.add(waitingResponse);
+        }
+
         Long total = queryFactory
                 .select(waiting.count())
                 .from(waiting)
-                .where(waiting.store.id.eq(storeId))
+                .where(builder)
                 .fetchOne();
 
-        return new PageImpl<>(content, pageable, total != null ? total : 0);
+        return new PageImpl<>(content, pageable, Optional.ofNullable(total).orElse(0L));
     }
-
 }

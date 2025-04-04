@@ -1,6 +1,5 @@
 package com.example.wait4eat.domain.waiting.entity;
 
-
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
@@ -33,6 +32,7 @@ public class Waiting{
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(nullable = false)
     private int peopleCount;
 
     @Enumerated(EnumType.STRING)

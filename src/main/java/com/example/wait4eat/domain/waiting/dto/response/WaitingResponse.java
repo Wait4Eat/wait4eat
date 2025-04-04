@@ -12,7 +12,7 @@ public class WaitingResponse {
     private final Long storeId;
     private final Long userId;
     private final int peopleCount;
-    private final String status;
+    private final WaitingStatus status;
     private final LocalDateTime createdAt;
     private final LocalDateTime calledAt;
     private final LocalDateTime cancelledAt;
@@ -32,7 +32,7 @@ public class WaitingResponse {
         this.storeId = storeId;
         this.userId = userId;
         this.peopleCount = peopleCount;
-        this.status = status.toString();
+        this.status = status;
         this.createdAt = createdAt;
         this.calledAt = calledAt;
         this.cancelledAt = cancelledAt;
@@ -41,7 +41,7 @@ public class WaitingResponse {
 
     public static WaitingResponse from(Waiting waiting) {
         return WaitingResponse.builder()
-                .storeId(waiting.getId())
+                .storeId(waiting.getStore().getId())
                 .userId(waiting.getUser().getId())
                 .peopleCount(waiting.getPeopleCount())
                 .status(waiting.getStatus())
