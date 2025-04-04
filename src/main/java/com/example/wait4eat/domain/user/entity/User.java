@@ -26,15 +26,17 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(nullable = false)
     private String nickname;
 
     @Column(nullable = false)
     private String password;
 
-//    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role; // USER / OWNER
 
+    @Column(nullable = false)
     @CreatedDate
     private LocalDateTime createdAt;
 
