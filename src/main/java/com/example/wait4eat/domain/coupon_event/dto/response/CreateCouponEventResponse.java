@@ -16,9 +16,7 @@ public class CreateCouponEventResponse {
     private final BigDecimal discountAmount;
     private final Integer totalQuantity;
     private final Integer issuedQuantity;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private final LocalDateTime expiresAt;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private final LocalDateTime createdAt;
 
     @Builder
