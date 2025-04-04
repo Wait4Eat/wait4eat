@@ -35,6 +35,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
         List<Tuple> rows = queryFactory
                 .select(
+                        waiting.id,
                         waiting.store.id,
                         waiting.user.id,
                         waiting.peopleCount,
@@ -54,6 +55,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
         List<WaitingResponse> content = new ArrayList<>();
         for (Tuple row : rows) {
             WaitingResponse waitingResponse = WaitingResponse.builder()
+                    .waitingId(row.get(waiting.id))
                     .storeId(row.get(waiting.store.id))
                     .userId(row.get(waiting.user.id))
                     .peopleCount(row.get(waiting.peopleCount))
