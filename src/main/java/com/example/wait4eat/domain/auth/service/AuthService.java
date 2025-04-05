@@ -39,7 +39,7 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        return new SignupResponse(savedUser.getEmail(), savedUser.getNickname());
+        return SignupResponse.from(savedUser);
     }
 
     @Transactional(readOnly = true)
@@ -54,7 +54,6 @@ public class AuthService {
 
         String bearerToken = jwtUtil.createToken(user.getId(), user.getEmail(), user.getRole());
 
-        return new SigninResponse(user.getId(), bearerToken);
-
+        return SigninResponse.of(user, bearerToken);
     }
 }
