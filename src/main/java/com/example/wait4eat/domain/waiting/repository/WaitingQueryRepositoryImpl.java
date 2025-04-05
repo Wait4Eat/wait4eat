@@ -1,7 +1,9 @@
 package com.example.wait4eat.domain.waiting.repository;
 
+import com.example.wait4eat.domain.waiting.dto.response.MyPastWaitingResponse;
 import com.example.wait4eat.domain.waiting.dto.response.MyWaitingResponse;
 import com.example.wait4eat.domain.waiting.dto.response.WaitingResponse;
+import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
@@ -15,7 +17,10 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import static com.example.wait4eat.domain.user.entity.QUser.user;
+import static com.example.wait4eat.domain.store.entity.QStore.store;
 import static com.example.wait4eat.domain.waiting.entity.QWaiting.waiting;
 
 @Repository
@@ -118,4 +123,36 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
         return Optional.of(waitingResponse);
     }
+
+    @Override
+    public Page<MyPastWaitingResponse> findMyPastWaitings(Long userId, Pageable pageable) {
+        List<Waiting> waitings = queryFactory
+                .selectFrom(waiting)
+                .join(waiting.store, store).fetchJoin()
+                .join(waiting.user, user).fetchJoin()  
+                .where(
+                        waiting.user.id.eq(userId),
+                        waiting.status.in(WaitingStatus.CANCELLED, WaitingStatus.COMPLETED)
+                )
+                .orderBy(waiting.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        List<MyPastWaitingResponse> content = waitings.stream()
+                .map(MyPastWaitingResponse::from)
+                .collect(Collectors.toList());
+
+        Long total = queryFactory
+                .select(waiting.count())
+                .from(waiting)
+                .where(
+                        waiting.user.id.eq(userId),
+                        waiting.status.in(WaitingStatus.CANCELLED, WaitingStatus.COMPLETED)
+                )
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, Optional.ofNullable(total).orElse(0L));
+    }
+
 }

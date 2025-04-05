@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.waiting.controller;
 
+import com.example.wait4eat.domain.waiting.dto.response.MyPastWaitingResponse;
 import com.example.wait4eat.domain.waiting.dto.response.MyWaitingResponse;
 import com.example.wait4eat.domain.waiting.dto.response.WaitingResponse;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
@@ -37,6 +38,14 @@ public class WaitingController {
             @AuthenticationPrincipal AuthUser authUser
     ) {
         return ResponseEntity.ok(waitingService.getMyWaiting(authUser.getUserId()));
+    }
+
+    @GetMapping("/api/v1/waitings/me/history")
+    public ResponseEntity<Page<MyPastWaitingResponse>> getMyPastWaitings(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PageableDefault(page = 1, size = 10) Pageable pageable
+    ) {
+        return ResponseEntity.ok(waitingService.getMyPastWaitings(authUser.getUserId(), pageable));
     }
 
 }

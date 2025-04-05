@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.waiting.service;
 
+import com.example.wait4eat.domain.waiting.dto.response.MyPastWaitingResponse;
 import com.example.wait4eat.domain.waiting.dto.response.MyWaitingResponse;
 import com.example.wait4eat.domain.waiting.dto.response.WaitingResponse;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
@@ -29,5 +30,11 @@ public class WaitingService {
     public MyWaitingResponse getMyWaiting(Long userId) {
         return waitingRepository.findMyWaiting(userId)
                 .orElseThrow(() -> new CustomException(ExceptionType.NO_CURRENT_WAITING));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MyPastWaitingResponse> getMyPastWaitings(Long userId, Pageable pageable) {
+        pageable = PageRequest.of(pageable.getPageNumber() - 1, pageable.getPageSize());
+        return waitingRepository.findMyPastWaitings(userId, pageable);
     }
 }
