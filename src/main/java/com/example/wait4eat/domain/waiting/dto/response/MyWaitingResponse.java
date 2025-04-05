@@ -1,6 +1,7 @@
 package com.example.wait4eat.domain.waiting.dto.response;
 
 import com.example.wait4eat.domain.waiting.entity.Waiting;
+import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,7 +13,7 @@ public class MyWaitingResponse {
     private final Long storeId;
     private final Long userId;
     private final int peopleCount;
-    private final String status;
+    private final WaitingStatus status;
     private final int waitingTeamCount;
     private final int myWaitingOrder;
     private final LocalDateTime createdAt;
@@ -26,7 +27,7 @@ public class MyWaitingResponse {
             Long storeId,
             Long userId,
             int peopleCount,
-            String status,
+            WaitingStatus status,
             int waitingTeamCount,
             int myWaitingOrder,
             LocalDateTime createdAt,
@@ -53,7 +54,7 @@ public class MyWaitingResponse {
                 .storeId(waiting.getStore().getId())
                 .userId(waiting.getUser().getId())
                 .peopleCount(waiting.getPeopleCount())
-                .status(waiting.getStatus().name())
+                .status(waiting.getStatus())
                 .waitingTeamCount(waiting.getWaitingTeamCount())
                 .myWaitingOrder(waiting.getMyWaitingOrder())
                 .createdAt(waiting.getCreatedAt())

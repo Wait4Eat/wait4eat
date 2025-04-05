@@ -95,8 +95,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                         waiting.enteredAt
                 )
                 .from(waiting)
-                //.where(waiting.user.id.eq(userId), waiting.status.eq(WaitingStatus.WAITING))
-                .where(waiting.user.id.eq(userId), waiting.status.in(WaitingStatus.WAITING, WaitingStatus.CALLED))
+                .where(waiting.user.id.eq(userId), waiting.status.eq(WaitingStatus.WAITING))
                 .fetchOne();
 
         if (row == null) {
@@ -108,7 +107,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .storeId(row.get(waiting.store.id))
                 .userId(row.get(waiting.user.id))
                 .peopleCount(row.get(waiting.peopleCount))
-                .status(row.get(waiting.status).name())
+                .status(row.get(waiting.status))
                 .waitingTeamCount(row.get(waiting.waitingTeamCount))
                 .myWaitingOrder(row.get(waiting.myWaitingOrder))
                 .createdAt(row.get(waiting.createdAt))
