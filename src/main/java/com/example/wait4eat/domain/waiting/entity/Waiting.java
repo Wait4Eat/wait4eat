@@ -60,4 +60,9 @@ public class Waiting{
         this.myWaitingOrder = myWaitingOrder;
         this.status = status;
     }
+
+    public void cancel() {
+        this.status = WaitingStatus.CANCELLED;
+        this.cancelledAt = LocalDateTime.now();
+    }
 }

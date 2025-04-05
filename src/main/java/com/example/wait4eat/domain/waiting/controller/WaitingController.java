@@ -12,10 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -46,6 +43,15 @@ public class WaitingController {
             @PageableDefault(page = 1, size = 10) Pageable pageable
     ) {
         return ResponseEntity.ok(waitingService.getMyPastWaitings(authUser.getUserId(), pageable));
+    }
+
+    @DeleteMapping("/api/v1/waitings/{waitingId}")
+    public ResponseEntity<Void> cancelMyWaiting(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long waitingId
+    ) {
+        waitingService.cancelMyWaiting(authUser.getUserId(), waitingId);
+        return ResponseEntity.ok().build();
     }
 
 }
