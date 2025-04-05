@@ -44,6 +44,7 @@ public enum ExceptionType {
 
     // Waiting
     WAITING_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 웨이팅을 찾을 수 없습니다."),
+    NO_CURRENT_WAITING(HttpStatus.NOT_FOUND, "현재 대기 중인 웨이팅이 없습니다."),
     INVALID_WAITING_TYPE(HttpStatus.BAD_REQUEST, "유효하지 않은 웨이팅 타입입니다."),
 
     // Server Error

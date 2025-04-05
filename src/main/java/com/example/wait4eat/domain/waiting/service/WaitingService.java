@@ -20,7 +20,7 @@ public class WaitingService {
     private final WaitingRepository waitingRepository;
 
     @Transactional(readOnly = true)
-    public Page<WaitingResponse> getWaitings(Long storeId, WaitingStatus status, Pageable pageable) {
+    public Page<WaitingResponse> getWaitings(Long userId, Long storeId, WaitingStatus status, Pageable pageable) {
         pageable = PageRequest.of(pageable.getPageNumber() - 1, pageable.getPageSize());
         return waitingRepository.findWaitingsByStoreId(storeId, status, pageable);
     }
@@ -28,6 +28,6 @@ public class WaitingService {
     @Transactional(readOnly = true)
     public MyWaitingResponse getMyWaiting(Long userId) {
         return waitingRepository.findMyWaiting(userId)
-                .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ExceptionType.NO_CURRENT_WAITING));
     }
 }
