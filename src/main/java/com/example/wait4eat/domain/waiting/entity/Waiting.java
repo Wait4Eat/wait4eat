@@ -25,15 +25,19 @@ public class Waiting{
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "store_id")
+    @JoinColumn(name = "store_id", nullable = false)
     private Store store;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(nullable = false)
     private int peopleCount;
+
+    private int waitingTeamCount;
+
+    private int myWaitingOrder;
 
     @Enumerated(EnumType.STRING)
     private WaitingStatus status;
@@ -48,10 +52,12 @@ public class Waiting{
     private LocalDateTime enteredAt;
 
     @Builder
-    public Waiting(Store store, User user, int peopleCount, WaitingStatus status) {
+    public Waiting(Store store, User user, int peopleCount, WaitingStatus status, int waitingTeamCount, int myWaitingOrder) {
         this.store = store;
         this.user = user;
         this.peopleCount = peopleCount;
+        this.waitingTeamCount = waitingTeamCount;
+        this.myWaitingOrder = myWaitingOrder;
         this.status = status;
     }
 }

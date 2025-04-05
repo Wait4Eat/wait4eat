@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.waiting.repository;
 
+import com.example.wait4eat.domain.waiting.dto.response.MyWaitingResponse;
 import com.example.wait4eat.domain.waiting.dto.response.WaitingResponse;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import com.querydsl.core.BooleanBuilder;
@@ -75,5 +76,47 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, Optional.ofNullable(total).orElse(0L));
+    }
+
+    @Override
+    public Optional<MyWaitingResponse> findMyWaiting(Long userId) {
+        Tuple row = queryFactory
+                .select(
+                        waiting.id,
+                        waiting.store.id,
+                        waiting.user.id,
+                        waiting.peopleCount,
+                        waiting.status,
+                        waiting.waitingTeamCount,
+                        waiting.myWaitingOrder,
+                        waiting.createdAt,
+                        waiting.calledAt,
+                        waiting.cancelledAt,
+                        waiting.enteredAt
+                )
+                .from(waiting)
+                //.where(waiting.user.id.eq(userId), waiting.status.eq(WaitingStatus.WAITING))
+                .where(waiting.user.id.eq(userId), waiting.status.in(WaitingStatus.WAITING, WaitingStatus.CALLED))
+                .fetchOne();
+
+        if (row == null) {
+            return Optional.empty();
+        }
+
+        MyWaitingResponse waitingResponse = MyWaitingResponse.builder()
+                .waitingId(row.get(waiting.id))
+                .storeId(row.get(waiting.store.id))
+                .userId(row.get(waiting.user.id))
+                .peopleCount(row.get(waiting.peopleCount))
+                .status(row.get(waiting.status).name())
+                .waitingTeamCount(row.get(waiting.waitingTeamCount))
+                .myWaitingOrder(row.get(waiting.myWaitingOrder))
+                .createdAt(row.get(waiting.createdAt))
+                .calledAt(row.get(waiting.calledAt))
+                .cancelledAt(row.get(waiting.cancelledAt))
+                .enteredAt(row.get(waiting.enteredAt))
+                .build();
+
+        return Optional.of(waitingResponse);
     }
 }
