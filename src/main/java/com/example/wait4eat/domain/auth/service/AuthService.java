@@ -1,15 +1,14 @@
-package com.example.wait4eat.global.auth.service;
+package com.example.wait4eat.domain.auth.service;
 
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.user.repository.UserRepository;
-import com.example.wait4eat.global.auth.dto.request.SigninRequest;
-import com.example.wait4eat.global.auth.dto.request.SignupRequest;
-import com.example.wait4eat.global.auth.dto.response.SigninResponse;
-import com.example.wait4eat.global.auth.dto.response.SignupResponse;
+import com.example.wait4eat.domain.auth.dto.request.SigninRequest;
+import com.example.wait4eat.domain.auth.dto.request.SignupRequest;
+import com.example.wait4eat.domain.auth.dto.response.SigninResponse;
+import com.example.wait4eat.domain.auth.dto.response.SignupResponse;
 import com.example.wait4eat.global.auth.jwt.JwtUtil;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,7 +34,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .nickname(request.getNickname())
                 .password(encodePassword)
-                .role(request.getRole())
+                .role(request.getUserRole())
                 .build();
 
         User savedUser = userRepository.save(user);

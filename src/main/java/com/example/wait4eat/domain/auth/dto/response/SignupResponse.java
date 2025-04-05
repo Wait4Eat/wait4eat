@@ -1,4 +1,4 @@
-package com.example.wait4eat.global.auth.dto.response;
+package com.example.wait4eat.domain.auth.dto.response;
 
 import com.example.wait4eat.domain.user.entity.User;
 import lombok.Builder;
