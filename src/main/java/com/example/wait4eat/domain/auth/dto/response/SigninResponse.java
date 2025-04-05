@@ -11,7 +11,7 @@ public class SigninResponse {
     private String bearerToken;
 
     @Builder
-    public SigninResponse(
+    private SigninResponse(
             Long id,
             String bearerToken
     ) {
@@ -19,7 +19,7 @@ public class SigninResponse {
         this.bearerToken = bearerToken;
     }
 
-    public static SigninResponse from(User user, String bearerToken) {
+    public static SigninResponse of(User user, String bearerToken) {
         return SigninResponse.builder()
                 .id(user.getId())
                 .bearerToken(bearerToken)
