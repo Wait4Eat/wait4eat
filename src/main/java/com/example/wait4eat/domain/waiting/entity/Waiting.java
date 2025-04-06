@@ -61,8 +61,28 @@ public class Waiting{
         this.status = status;
     }
 
-    public void cancel() {
-        this.status = WaitingStatus.CANCELLED;
-        this.cancelledAt = LocalDateTime.now();
+    public void cancel(LocalDateTime cancelledAt) {
+        if (this.status != WaitingStatus.CANCELLED) {
+            this.status = WaitingStatus.CANCELLED;
+            this.cancelledAt = cancelledAt;
+        }
+    }
+
+    public void call(LocalDateTime calledAt) {
+        if (this.status != WaitingStatus.CALLED) {
+            this.status = WaitingStatus.CALLED;
+            this.calledAt = calledAt;
+        }
+    }
+
+    public void enter(LocalDateTime enteredAt) {
+        if (this.status != WaitingStatus.COMPLETED) {
+            this.status = WaitingStatus.COMPLETED;
+            this.enteredAt = enteredAt;
+        }
+    }
+
+    public void updateStatus(WaitingStatus newStatus) {
+        this.status = newStatus;
     }
 }

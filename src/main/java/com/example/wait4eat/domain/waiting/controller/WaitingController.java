@@ -1,11 +1,14 @@
 package com.example.wait4eat.domain.waiting.controller;
 
+import com.example.wait4eat.domain.waiting.dto.request.UpdateWaitingRequest;
 import com.example.wait4eat.domain.waiting.dto.response.MyPastWaitingResponse;
 import com.example.wait4eat.domain.waiting.dto.response.MyWaitingResponse;
+import com.example.wait4eat.domain.waiting.dto.response.UpdateWaitingResponse;
 import com.example.wait4eat.domain.waiting.dto.response.WaitingResponse;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import com.example.wait4eat.domain.waiting.service.WaitingService;
 import com.example.wait4eat.global.auth.dto.AuthUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,6 +55,15 @@ public class WaitingController {
     ) {
         waitingService.cancelMyWaiting(authUser.getUserId(), waitingId);
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/api/v1/waitings/{waitingId}/status")
+    public ResponseEntity<UpdateWaitingResponse> updateWaitingStatus(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long waitingId,
+            @RequestBody @Valid UpdateWaitingRequest updateWaitingRequest
+    ) {
+        return ResponseEntity.ok(waitingService.updateWaitingStatus(authUser.getUserId(), waitingId, updateWaitingRequest));
     }
 
 }
