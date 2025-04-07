@@ -2,6 +2,7 @@ package com.example.wait4eat.domain.store.service;
 
 import com.example.wait4eat.domain.store.dto.request.CreateStoreRequest;
 import com.example.wait4eat.domain.store.dto.response.CreateStoreResponse;
+import com.example.wait4eat.domain.store.dto.response.GetStoreListResponse;
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
 import com.example.wait4eat.domain.user.entity.User;
@@ -12,6 +13,9 @@ import com.example.wait4eat.global.exception.ExceptionType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +24,7 @@ public class StoreService {
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public CreateStoreResponse create(AuthUser authUser, CreateStoreRequest request) {
 
         User user = userRepository.findById(authUser.getUserId()).orElseThrow(
@@ -44,5 +49,12 @@ public class StoreService {
         Store savedStore = storeRepository.save(store);
 
         return CreateStoreResponse.of(savedStore, user);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GetStoreListResponse> getStoreList() {
+        return storeRepository.findAll().stream()
+                .map(GetStoreListResponse::from)
+                .toList();
     }
 }
