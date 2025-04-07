@@ -20,7 +20,7 @@ public class GetCouponEventResponse {
     private final LocalDateTime createdAt;
 
     @Builder
-    public GetCouponEventResponse(
+    private GetCouponEventResponse(
             Long id,
             Long storeId,
             String name,
