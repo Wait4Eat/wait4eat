@@ -4,10 +4,12 @@ import com.example.wait4eat.domain.coupon_event.dto.request.CreateCouponEventReq
 import com.example.wait4eat.domain.coupon_event.dto.response.CreateCouponEventResponse;
 import com.example.wait4eat.domain.coupon_event.dto.response.GetCouponEventResponse;
 import com.example.wait4eat.domain.coupon_event.service.CouponEventService;
+import com.example.wait4eat.domain.user.enums.UserRole;
 import com.example.wait4eat.global.auth.dto.AuthUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +19,7 @@ public class CouponEventController {
 
     private final CouponEventService couponEventService;
 
+    @Secured(UserRole.Authority.OWNER)
     @PostMapping({"/api/v1/stores/{storeId}/couponevents"})
     public ResponseEntity<CreateCouponEventResponse> createCouponEvent(
             @AuthenticationPrincipal AuthUser authUser,
