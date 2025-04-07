@@ -56,7 +56,7 @@ public class WaitingService {
             throw new CustomException(ExceptionType.ALREADY_FINISHED_WAITING);
         }
 
-        updateWaitingToCancelled(waiting, getCurrentTime());
+        updateWaitingStatusInternal(waiting, WaitingStatus.CANCELLED);
     }
 
     @Transactional
@@ -65,19 +65,7 @@ public class WaitingService {
                 .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
         WaitingStatus newStatus = updateWaitingRequest.getStatus();
-        WaitingStatus currentStatus = waiting.getStatus();
-
-        waiting.updateStatus(newStatus);
-
-        LocalDateTime now = getCurrentTime();
-
-        if (newStatus == WaitingStatus.CALLED && currentStatus != WaitingStatus.CALLED && waiting.getCalledAt() == null) {
-            updateWaitingToCalled(waiting, now);
-        } else if (newStatus == WaitingStatus.CANCELLED && currentStatus != WaitingStatus.CANCELLED && waiting.getCancelledAt() == null) {
-            updateWaitingToCancelled(waiting, now);
-        } else if (newStatus == WaitingStatus.COMPLETED && currentStatus != WaitingStatus.COMPLETED && waiting.getEnteredAt() == null) {
-            updateWaitingToCompleted(waiting, now);
-        }
+        updateWaitingStatusInternal(waiting, newStatus);
 
         return UpdateWaitingResponse.builder()
                 .waitingId(waiting.getId())
@@ -88,25 +76,25 @@ public class WaitingService {
                 .build();
     }
 
+    @Transactional
+    public void updateWaitingStatusInternal(Waiting waiting, WaitingStatus newStatus) {
+        LocalDateTime now = getCurrentTime();
+
+        if (waiting.getStatus() == newStatus) {
+            return;
+        }
+
+        if (newStatus == WaitingStatus.CALLED && waiting.getCalledAt() == null) {
+            waiting.call(now);
+        } else if (newStatus == WaitingStatus.CANCELLED && waiting.getCancelledAt() == null) {
+            waiting.cancel(now);
+        } else if (newStatus == WaitingStatus.COMPLETED && waiting.getEnteredAt() == null) {
+            waiting.enter(now);
+        }
+    }
+
     private LocalDateTime getCurrentTime() {
         return LocalDateTime.now();
     }
 
-    private void updateWaitingToCalled(Waiting waiting, LocalDateTime now) {
-        if (waiting.getStatus() != WaitingStatus.CALLED && waiting.getCalledAt() == null) {
-            waiting.call(now);
-        }
-    }
-
-    private void updateWaitingToCancelled(Waiting waiting, LocalDateTime now) {
-        if (waiting.getStatus() != WaitingStatus.CANCELLED && waiting.getCancelledAt() == null) {
-            waiting.cancel(now);
-        }
-    }
-
-    private void updateWaitingToCompleted(Waiting waiting, LocalDateTime now) {
-        if (waiting.getStatus() != WaitingStatus.COMPLETED && waiting.getEnteredAt() == null) {
-            waiting.enter(now);
-        }
-    }
 }
