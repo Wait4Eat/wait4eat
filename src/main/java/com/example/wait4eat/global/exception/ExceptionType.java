@@ -51,6 +51,9 @@ public enum ExceptionType {
     SINGLE_WAIT_ALLOWED(HttpStatus.BAD_REQUEST, "한 번에 하나의 웨이팅만 허용됩니다."),
     NO_PERMISSION_TO_ACCESS_STORE_WAITING(HttpStatus.FORBIDDEN, "해당 가게 웨이팅 조회 권한이 없습니다"),
 
+    // StoreWishlist
+    ALREADY_WISHLIST_STORE(HttpStatus.CONFLICT, "이미 찜한 가게입니다."),
+
     // Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 문제가 발생했습니다.");
 
