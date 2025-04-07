@@ -10,13 +10,15 @@ import java.time.LocalDateTime;
 @Getter
 public class StoreWishlistResponse {
     private final Long id;
-    private final Store store;
+    private final Long storeId;
+    private final String storeName;
     private final LocalDateTime createdAt;
 
     @Builder
     private StoreWishlistResponse(Long id, Store store, LocalDateTime createdAt) {
         this.id = id;
-        this.store = store;
+        this.storeId = store.getId();
+        this.storeName = store.getName();
         this.createdAt = createdAt;
     }
 
