@@ -25,6 +25,12 @@ public class NotificationController {
     private final NotificationService notificationService;
     private final SseEmitterManager sseEmitterManager;
 
+    @GetMapping(value = "/api/v1/notifications/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribe(
+            @RequestParam Long userId
+    ) {
+        return sseEmitterManager.connect(userId);
+    }
 
     @GetMapping("/api/v1/notifications")
     public ResponseEntity<List<NotificationResponse>> getNotifications(
@@ -34,6 +40,4 @@ public class NotificationController {
     ) {
         return ResponseEntity.ok(notificationService.getNotifications(authUser.getUserId(), pageable));
     }
-
-
 }

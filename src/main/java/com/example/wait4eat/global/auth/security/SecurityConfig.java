@@ -44,6 +44,8 @@ public class SecurityConfig {
                 .logout(AbstractHttpConfigurer::disable)
                 .rememberMe(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/test-sse.html", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers(request -> request.getRequestURI().startsWith("/api/v1/notifications/subscribe")).permitAll()
                         .requestMatchers(request -> request.getRequestURI().startsWith("/api/v1/auth")).permitAll()
                         // ROLE_OWNER만 허용
                         .requestMatchers(HttpMethod.POST, "/api/v1/stores").hasAuthority(UserRole.Authority.OWNER)
