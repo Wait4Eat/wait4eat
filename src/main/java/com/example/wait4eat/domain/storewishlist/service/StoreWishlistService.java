@@ -12,14 +12,14 @@ import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class StoreWishlistService {
     private final StoreWishlistRepository storeWishlistRepository;
     private final UserRepository userRepository;
@@ -58,19 +58,13 @@ public class StoreWishlistService {
         storeWishlistRepository.delete(findWishlist);
     }
 
-    public Page<StoreWishlistResponse> getAllWishlist(AuthUser authUser, int page, int size, String sort) {
+    @Transactional(readOnly = true)
+    public List<StoreWishlistResponse> getAllWishlist(AuthUser authUser, Pageable pageable) {
         User findUser = userRepository.findById(authUser.getUserId()).orElseThrow(() -> new CustomException(ExceptionType.USER_NOT_FOUND));
-        int adjustedPage = (page > 0) ? page - 1 : 0;
-        if (sort == null || sort.isBlank()) {
-            sort = "createdAt";
-        }
-        PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by(sort).descending());
-        Page<StoreWishlist> wishlistPage = storeWishlistRepository.findAllByUser(findUser, pageable);
 
-        return wishlistPage.map(storeWishlist -> StoreWishlistResponse.builder()
-                .id(storeWishlist.getId())
-                .store(storeWishlist.getStore())
-                .createdAt(storeWishlist.getCreatedAt())
-                .build());
+        return storeWishlistRepository.findAllByUser(findUser, pageable)
+                .stream()
+                .map(StoreWishlistResponse::from)
+                .toList();
     }
 }
