@@ -32,6 +32,9 @@ public class Waiting{
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(unique = true) // 주문 ID는 유일해야 함
+    private String orderId;
+
     @Column(nullable = false)
     private int peopleCount;
 
@@ -50,9 +53,10 @@ public class Waiting{
     private LocalDateTime enteredAt;
 
     @Builder
-    public Waiting(Store store, User user, int peopleCount, int myWaitingOrder, WaitingStatus status) {
+    public Waiting(Store store, User user, String orderId, int peopleCount, int myWaitingOrder, WaitingStatus status) {
         this.store = store;
         this.user = user;
+        this.orderId = orderId;
         this.peopleCount = peopleCount;
         this.myWaitingOrder = myWaitingOrder;
         this.status = status;
