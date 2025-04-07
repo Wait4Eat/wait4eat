@@ -1,6 +1,7 @@
 package com.example.wait4eat.domain.store.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -15,17 +16,16 @@ public class CreateStoreRequest {
     @NotBlank(message = "가게 주소 입력은 필수입니다.")
     private String address;
 
-    @NotBlank(message = "가게 오픈 시간 입력은 필수입니다.")
+    @NotNull(message = "가게 오픈 시간 입력은 필수입니다.")
     private LocalTime openTime;
 
-    @NotBlank(message = "가게 마감 시간 입력은 필수입니다.")
+    @NotNull(message = "가게 마감 시간 입력은 필수입니다.")
     private LocalTime closeTime;
 
     private String description;
 
     private String imageUrl;
 
-    @NotBlank(message = "웨이팅 예약금 입력은 필수입니다.")
     private int depositAmount;
 
     @Builder
