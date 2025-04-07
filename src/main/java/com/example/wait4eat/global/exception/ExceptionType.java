@@ -37,6 +37,8 @@ public enum ExceptionType {
 
     // Coupon Event
     COUPON_EVENT_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 쿠폰 이벤트를 찾을 수 없습니다."),
+    COUPON_EVENT_NOT_MATCH_STORE(HttpStatus.BAD_REQUEST, "해당 가게의 쿠폰이 아닙니다."),
+    COUPON_EVENT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 진행 중인 쿠폰 이벤트가 있습니다."),
 
     // Waiting
     WAITING_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 웨이팅을 찾을 수 없습니다."),

@@ -24,17 +24,21 @@ public class CouponEvent {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "store_id")
+    @JoinColumn(name = "store_id", nullable = false)
     private Store store;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private BigDecimal discountAmount;
 
+    @Column(nullable = false)
     private int totalQuantity;
 
     private int issuedQuantity;
 
+    @Column(nullable = false)
     private LocalDateTime expiresAt;
 
     @CreatedDate
@@ -47,7 +51,8 @@ public class CouponEvent {
             BigDecimal discountAmount,
             int totalQuantity,
             int issuedQuantity,
-            LocalDateTime expiresAt
+            LocalDateTime expiresAt,
+            LocalDateTime createdAt
     ) {
         this.store = store;
         this.name = name;
@@ -55,5 +60,7 @@ public class CouponEvent {
         this.totalQuantity = totalQuantity;
         this.issuedQuantity = issuedQuantity;
         this.expiresAt = expiresAt;
+        this.createdAt = createdAt;
     }
+
 }
