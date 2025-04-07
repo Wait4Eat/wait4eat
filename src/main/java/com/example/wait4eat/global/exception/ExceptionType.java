@@ -52,6 +52,7 @@ public enum ExceptionType {
     NO_PERMISSION_TO_ACCESS_STORE_WAITING(HttpStatus.FORBIDDEN, "해당 가게 웨이팅 조회 권한이 없습니다"),
 
     // StoreWishlist
+    STORE_WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 위시리스트를 찾을 수 없습니다."),
     ALREADY_WISHLIST_STORE(HttpStatus.CONFLICT, "이미 찜한 가게입니다."),
 
     // Server Error
