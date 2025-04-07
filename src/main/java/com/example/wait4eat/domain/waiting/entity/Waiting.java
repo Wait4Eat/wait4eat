@@ -81,8 +81,4 @@ public class Waiting{
             this.enteredAt = enteredAt;
         }
     }
-
-    public void updateStatus(WaitingStatus newStatus) {
-        this.status = newStatus;
-    }
 }
