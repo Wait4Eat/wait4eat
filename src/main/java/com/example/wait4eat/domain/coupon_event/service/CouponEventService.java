@@ -25,6 +25,7 @@ public class CouponEventService {
 
     @Transactional
     public CreateCouponEventResponse createCouponEvent(
+            AuthUser authUser,
             Long storeId,
             CreateCouponEventRequest request
     ) {
