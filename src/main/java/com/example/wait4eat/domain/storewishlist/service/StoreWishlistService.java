@@ -2,6 +2,7 @@ package com.example.wait4eat.domain.storewishlist.service;
 
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
+import com.example.wait4eat.domain.storewishlist.dto.response.StoreWishlistResponse;
 import com.example.wait4eat.domain.storewishlist.entity.StoreWishlist;
 import com.example.wait4eat.domain.storewishlist.repository.StoreWishlistRepository;
 import com.example.wait4eat.domain.user.entity.User;
@@ -10,6 +11,9 @@ import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,5 +56,21 @@ public class StoreWishlistService {
         }
 
         storeWishlistRepository.delete(findWishlist);
+    }
+
+    public Page<StoreWishlistResponse> getAllWishlist(AuthUser authUser, int page, int size, String sort) {
+        User findUser = userRepository.findById(authUser.getUserId()).orElseThrow(() -> new CustomException(ExceptionType.USER_NOT_FOUND));
+        int adjustedPage = (page > 0) ? page - 1 : 0;
+        if (sort == null || sort.isBlank()) {
+            sort = "createdAt";
+        }
+        PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by(sort).descending());
+        Page<StoreWishlist> wishlistPage = storeWishlistRepository.findAllByUser(findUser, pageable);
+
+        return wishlistPage.map(storeWishlist -> StoreWishlistResponse.builder()
+                .id(storeWishlist.getId())
+                .store(storeWishlist.getStore())
+                .createdAt(storeWishlist.getCreatedAt())
+                .build());
     }
 }
