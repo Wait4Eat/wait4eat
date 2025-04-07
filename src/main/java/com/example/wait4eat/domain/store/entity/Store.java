@@ -42,6 +42,8 @@ public class Store {
 
     private int depositAmount;
 
+    private int waitingTeamCount;
+
     @CreatedDate
     private LocalDateTime createdAt;
 
@@ -57,7 +59,8 @@ public class Store {
             LocalTime closeTime,
             String description,
             String imageUrl,
-            int depositAmount
+            int depositAmount,
+            int waitingTeamCount
     ) {
         this.user = user;
         this.name = name;
@@ -67,5 +70,6 @@ public class Store {
         this.description = description;
         this.imageUrl = imageUrl;
         this.depositAmount = depositAmount;
+        this.waitingTeamCount = waitingTeamCount;
     }
 }

@@ -92,7 +92,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                         waiting.user.id,
                         waiting.peopleCount,
                         waiting.status,
-                        waiting.waitingTeamCount,
+                        store.waitingTeamCount,
                         waiting.myWaitingOrder,
                         waiting.createdAt,
                         waiting.calledAt,
@@ -100,6 +100,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                         waiting.enteredAt
                 )
                 .from(waiting)
+                .join(waiting.store, store)
                 .where(waiting.user.id.eq(userId), waiting.status.eq(WaitingStatus.WAITING))
                 .fetchOne();
 
@@ -112,7 +113,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .storeId(row.get(waiting.store.id))
                 .userId(row.get(waiting.user.id))
                 .peopleCount(row.get(waiting.peopleCount))
-                .waitingTeamCount(row.get(waiting.waitingTeamCount))
+                .waitingTeamCount(row.get(store.waitingTeamCount))
                 .myWaitingOrder(row.get(waiting.myWaitingOrder))
                 .status(row.get(waiting.status))
                 .createdAt(row.get(waiting.createdAt))

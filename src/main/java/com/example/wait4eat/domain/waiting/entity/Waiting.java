@@ -35,8 +35,6 @@ public class Waiting{
     @Column(nullable = false)
     private int peopleCount;
 
-    private int waitingTeamCount;
-
     private int myWaitingOrder;
 
     @Enumerated(EnumType.STRING)
@@ -52,11 +50,10 @@ public class Waiting{
     private LocalDateTime enteredAt;
 
     @Builder
-    public Waiting(Store store, User user, int peopleCount, WaitingStatus status, int waitingTeamCount, int myWaitingOrder) {
+    public Waiting(Store store, User user, int peopleCount, int myWaitingOrder, WaitingStatus status) {
         this.store = store;
         this.user = user;
         this.peopleCount = peopleCount;
-        this.waitingTeamCount = waitingTeamCount;
         this.myWaitingOrder = myWaitingOrder;
         this.status = status;
     }
