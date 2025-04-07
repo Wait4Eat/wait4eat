@@ -2,6 +2,7 @@ package com.example.wait4eat.domain.store.service;
 
 import com.example.wait4eat.domain.store.dto.request.CreateStoreRequest;
 import com.example.wait4eat.domain.store.dto.response.CreateStoreResponse;
+import com.example.wait4eat.domain.store.dto.response.GetStoreDetailResponse;
 import com.example.wait4eat.domain.store.dto.response.GetStoreListResponse;
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
@@ -56,5 +57,14 @@ public class StoreService {
         return storeRepository.findAll().stream()
                 .map(GetStoreListResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public GetStoreDetailResponse getStoreDetail(Long storeId) {
+        Store store = storeRepository.findById(storeId).orElseThrow(
+                () -> new CustomException(ExceptionType.STORE_NOT_FOUND)
+        );
+
+        return GetStoreDetailResponse.of(store, store.getUser());
     }
 }
