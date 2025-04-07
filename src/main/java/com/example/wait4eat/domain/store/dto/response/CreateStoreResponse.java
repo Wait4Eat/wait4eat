@@ -23,7 +23,7 @@ public class CreateStoreResponse {
     private LocalDateTime createdAt;
 
     @Builder
-    public CreateStoreResponse(
+    private CreateStoreResponse(
             Long id,
             Long userId,
             String name,
