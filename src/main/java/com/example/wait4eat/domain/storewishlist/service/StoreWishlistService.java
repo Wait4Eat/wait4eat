@@ -23,16 +23,34 @@ public class StoreWishlistService {
 
     @Transactional
     public void createWishlist(Long storeId, AuthUser authUser) {
-        User findUser = userRepository.findById(authUser.getUserId()).orElseThrow(() -> new CustomException(ExceptionType.USER_NOT_FOUND));
+        User findUser = userRepository.findById(authUser.getUserId()).orElseThrow(
+                () -> new CustomException(ExceptionType.USER_NOT_FOUND)
+        );
         Store findStore = storeRepository.findById(storeId).orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
         StoreWishlist storeWishlist = StoreWishlist.builder().user(findUser).store(findStore).build();
+
         if (storeWishlistRepository.existsByUserAndStore(findUser, findStore)) {
             throw new CustomException(ExceptionType.ALREADY_WISHLIST_STORE);
         }
+
         try {
             storeWishlistRepository.save(storeWishlist);
         } catch (CustomException ex) {
             throw new CustomException(ExceptionType.ALREADY_WISHLIST_STORE);
         }
+    }
+
+    @Transactional
+    public void deleteWishlist(Long storeWishlistsId, AuthUser authUser) {
+        User findUser = userRepository.findById(authUser.getUserId()).orElseThrow(
+                () -> new CustomException(ExceptionType.USER_NOT_FOUND)
+        );
+        StoreWishlist findWishlist = storeWishlistRepository.findByIdOrElseThrow(storeWishlistsId);
+
+        if (!findUser.getId().equals(findWishlist.getUserId())) {
+            throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
+        }
+
+        storeWishlistRepository.delete(findWishlist);
     }
 }

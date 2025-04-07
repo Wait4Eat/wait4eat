@@ -44,6 +44,7 @@ public enum ExceptionType {
     WAITING_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 웨이팅을 찾을 수 없습니다."),
 
     // StoreWishlist
+    STORE_WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 위시리스트를 찾을 수 없습니다."),
     ALREADY_WISHLIST_STORE(HttpStatus.CONFLICT, "이미 찜한 가게입니다."),
 
     // Server Error

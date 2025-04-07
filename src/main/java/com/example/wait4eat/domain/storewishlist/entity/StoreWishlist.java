@@ -45,4 +45,8 @@ public class StoreWishlist {
         this.user = user;
         this.store = store;
     }
+
+    public Long getUserId() {
+        return (this.user != null) ? this.user.getId() : null;
+    }
 }
