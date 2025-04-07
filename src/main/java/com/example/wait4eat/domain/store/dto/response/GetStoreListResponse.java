@@ -1,11 +1,9 @@
 package com.example.wait4eat.domain.store.dto.response;
 
 import com.example.wait4eat.domain.store.entity.Store;
-import com.example.wait4eat.domain.user.entity.User;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Getter
@@ -20,7 +18,7 @@ public class GetStoreListResponse {
     private int depositAmount;
 
     @Builder
-    public GetStoreListResponse(
+    private GetStoreListResponse(
             Long id,
             String name,
             String address,
