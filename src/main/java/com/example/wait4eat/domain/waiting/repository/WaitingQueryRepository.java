@@ -13,4 +13,5 @@ public interface WaitingQueryRepository {
     Page<WaitingResponse> findWaitingsByStoreId(Long storeId, WaitingStatus status, Pageable pageable);
     Optional<MyWaitingResponse> findMyWaiting(Long userId);
     Page<MyPastWaitingResponse> findMyPastWaitings(Long userId, Pageable pageable);
+    int countByStoreIdAndStatus(Long storeId, WaitingStatus status);
 }

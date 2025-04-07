@@ -30,6 +30,20 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
+    public int countByStoreIdAndStatus(Long storeId, WaitingStatus status) {
+        Integer count = queryFactory
+                .select(waiting.count().intValue())
+                .from(waiting)
+                .where(
+                        waiting.store.id.eq(storeId),
+                        waiting.status.eq(status)
+                )
+                .fetchOne();
+
+        return Optional.ofNullable(count).orElse(0);
+    }
+
+    @Override
     public Page<WaitingResponse> findWaitingsByStoreId(Long storeId, WaitingStatus status, Pageable pageable) {
 
         BooleanBuilder builder = new BooleanBuilder();

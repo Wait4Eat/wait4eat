@@ -1,10 +1,8 @@
 package com.example.wait4eat.domain.waiting.controller;
 
+import com.example.wait4eat.domain.waiting.dto.request.CreateWaitingRequest;
 import com.example.wait4eat.domain.waiting.dto.request.UpdateWaitingRequest;
-import com.example.wait4eat.domain.waiting.dto.response.MyPastWaitingResponse;
-import com.example.wait4eat.domain.waiting.dto.response.MyWaitingResponse;
-import com.example.wait4eat.domain.waiting.dto.response.UpdateWaitingResponse;
-import com.example.wait4eat.domain.waiting.dto.response.WaitingResponse;
+import com.example.wait4eat.domain.waiting.dto.response.*;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import com.example.wait4eat.domain.waiting.service.WaitingService;
 import com.example.wait4eat.global.auth.dto.AuthUser;
@@ -22,6 +20,15 @@ import org.springframework.web.bind.annotation.*;
 public class WaitingController {
 
     private final WaitingService waitingService;
+
+    @PostMapping("/api/v1/stores/{storeId}/waitings")
+    public ResponseEntity<CreateWaitingResponse> createWaiting(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long storeId,
+            @RequestBody @Valid CreateWaitingRequest request
+    ) {
+        return ResponseEntity.ok(waitingService.createWaiting(authUser.getUserId(), storeId, request));
+    }
 
     @GetMapping("/api/v1/stores/{storeId}/waitings")
     public ResponseEntity<Page<WaitingResponse>> getWaitings(

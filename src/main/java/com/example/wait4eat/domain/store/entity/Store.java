@@ -72,4 +72,16 @@ public class Store {
         this.depositAmount = depositAmount;
         this.waitingTeamCount = waitingTeamCount;
     }
+
+    // 웨이팅 팀 수를 증가
+    public void incrementWaitingTeamCount() {
+        this.waitingTeamCount++;
+    }
+
+    // 웨이팅 팀 수를 감소
+    public void decrementWaitingTeamCount() {
+        if (this.waitingTeamCount > 0) {
+            this.waitingTeamCount--;
+        }
+    }
 }
