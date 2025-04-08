@@ -3,8 +3,10 @@ package com.example.wait4eat.global.exception;
 import com.example.wait4eat.global.dto.response.ErrorResponse;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -61,6 +63,14 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(exceptionType.getHttpStatus())
                 .body(ErrorResponse.of(new CustomException(exceptionType),message));
+    }
+
+    // 권한 체크 후 AccessDeniedException 처리
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException e) {
+        log.warn("Access Denied: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.from(new CustomException(ExceptionType.NO_PERMISSION_ACTION)));
     }
 
     @ExceptionHandler(Exception.class)
