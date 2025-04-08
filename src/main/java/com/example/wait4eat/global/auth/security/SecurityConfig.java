@@ -45,13 +45,6 @@ public class SecurityConfig {
                 .rememberMe(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(request -> request.getRequestURI().startsWith("/api/v1/auth")).permitAll()
-                        // ROLE_OWNER만 허용
-                        .requestMatchers(HttpMethod.POST, "/api/v1/stores").hasAuthority(UserRole.Authority.OWNER)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/stores/{storeId}/waitings").hasAuthority(UserRole.Authority.OWNER)
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/waitings/{id}/status").hasAuthority(UserRole.Authority.OWNER)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/stores/{storeId}/images").hasAuthority(UserRole.Authority.OWNER)
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/{storeId}/images").hasAuthority(UserRole.Authority.OWNER)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/stores/{storeId}/couponevents").hasAuthority(UserRole.Authority.OWNER)
                         .anyRequest().authenticated()
                 )
                 .build();
