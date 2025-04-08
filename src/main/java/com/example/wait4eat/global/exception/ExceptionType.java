@@ -48,6 +48,8 @@ public enum ExceptionType {
     INVALID_WAITING_TYPE(HttpStatus.BAD_REQUEST, "유효하지 않은 웨이팅 타입입니다."),
     UNAUTHORIZED_CANCEL_WAITING(HttpStatus.FORBIDDEN, "웨이팅 취소 권한이 없습니다."),
     ALREADY_FINISHED_WAITING(HttpStatus.BAD_REQUEST, "이미 완료 또는 취소된 웨이팅입니다."),
+    SINGLE_WAIT_ALLOWED(HttpStatus.BAD_REQUEST, "한 번에 하나의 웨이팅만 허용됩니다."),
+    NO_PERMISSION_TO_ACCESS_STORE_WAITING(HttpStatus.FORBIDDEN, "해당 가게 웨이팅 조회 권한이 없습니다"),
 
     // Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 문제가 발생했습니다.");
