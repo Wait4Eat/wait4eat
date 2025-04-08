@@ -80,7 +80,7 @@ public class WaitingService {
     }
 
     @Transactional
-    public void cancelMyWaiting(Long userId, Long waitingId) {
+    public CancelWaitingResponse cancelMyWaiting(Long userId, Long waitingId) {
         Waiting waiting = waitingRepository.findById(waitingId)
                 .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
@@ -93,6 +93,7 @@ public class WaitingService {
         }
 
         updateWaitingStatusInternal(waiting, WaitingStatus.CANCELLED);
+        return CancelWaitingResponse.from(waiting);
     }
 
     @Transactional
