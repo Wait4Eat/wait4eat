@@ -11,16 +11,17 @@ import java.time.LocalTime;
 @Getter
 public class GetStoreDetailResponse {
 
-    private Long id;
-    private Long userId;
-    private String name;
-    private String address;
-    private LocalTime openTime;
-    private LocalTime closeTime;
-    private String description;
-    private String imageUrl;
-    private int depositAmount;
-    private LocalDateTime createdAt;
+    private final Long id;
+    private final Long userId;
+    private final String name;
+    private final String address;
+    private final LocalTime openTime;
+    private final LocalTime closeTime;
+    private final String description;
+    private final String imageUrl;
+    private final int depositAmount;
+    private final int waitingTeamCount;
+    private final LocalDateTime createdAt;
 
     @Builder
     private GetStoreDetailResponse(
@@ -33,6 +34,7 @@ public class GetStoreDetailResponse {
             String description,
             String imageUrl,
             int depositAmount,
+            int waitingTeamCount,
             LocalDateTime createdAt
     ) {
         this.id = id;
@@ -44,6 +46,7 @@ public class GetStoreDetailResponse {
         this.description = description;
         this.imageUrl = imageUrl;
         this.depositAmount = depositAmount;
+        this.waitingTeamCount = waitingTeamCount;
         this.createdAt = createdAt;
     }
 
@@ -58,6 +61,7 @@ public class GetStoreDetailResponse {
                 .description(store.getDescription())
                 .imageUrl(store.getImageUrl())
                 .depositAmount(store.getDepositAmount())
+                .waitingTeamCount(store.getWaitingTeamCount())
                 .createdAt(store.getCreatedAt())
                 .build();
 

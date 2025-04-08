@@ -24,8 +24,7 @@ public class CreateStoreRequest {
 
     private String description;
 
-    private String imageUrl;
-
+    @NotNull(message = "예약금 입력은 필수입니다.")
     private int depositAmount;
 
     @Builder
@@ -35,7 +34,6 @@ public class CreateStoreRequest {
             LocalTime openTime,
             LocalTime closeTime,
             String description,
-            String imageUrl,
             int depositAmount
     ) {
         this.name = name;
@@ -43,7 +41,6 @@ public class CreateStoreRequest {
         this.openTime = openTime;
         this.closeTime = closeTime;
         this.description = description;
-        this.imageUrl = imageUrl;
         this.depositAmount = depositAmount;
     }
 }
