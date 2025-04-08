@@ -9,11 +9,11 @@ import java.time.LocalDateTime;
 
 @Getter
 public class UpdateWaitingResponse {
-    private Long waitingId;
-    private WaitingStatus status;
-    private LocalDateTime calledAt;
-    private LocalDateTime cancelledAt;
-    private LocalDateTime enteredAt;
+    private final Long waitingId;
+    private final WaitingStatus status;
+    private final LocalDateTime calledAt;
+    private final LocalDateTime cancelledAt;
+    private final LocalDateTime enteredAt;
 
     @Builder
     public UpdateWaitingResponse(
