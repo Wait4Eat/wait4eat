@@ -87,4 +87,8 @@ public class Waiting{
         this.myWaitingOrder = 0;
     }
 
+    public void updateMyWaitingOrder(int newOrder) {
+        this.myWaitingOrder = newOrder;
+    }
+
 }

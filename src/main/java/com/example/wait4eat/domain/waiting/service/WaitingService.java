@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -100,6 +101,7 @@ public class WaitingService {
         // 취소한 사용자의 웨이팅 순서 유지
         // 웨이팅 상태만 변경하고 취소 시간 기록
         waiting.cancel(getCurrentTime());
+        reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
 
         return CancelWaitingResponse.from(waiting);
     }
@@ -131,6 +133,8 @@ public class WaitingService {
             // 최소된 사용자의 웨이팅 순서 유지
             Store store = waiting.getStore();
             store.decrementWaitingTeamCount();
+
+            reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
         }
 
         // 웨이팅 팀이 가게로 입장 완료
@@ -141,6 +145,7 @@ public class WaitingService {
             waiting.markAsCalled();
             Store store = waiting.getStore();
             store.decrementWaitingTeamCount();
+            reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
         }
 
         return UpdateWaitingResponse.builder()
@@ -156,4 +161,11 @@ public class WaitingService {
         return LocalDateTime.now();
     }
 
+    private void reorderWaitingQueue(Long storeId) {
+        List<Waiting> waitingList = waitingRepository.findByStoreIdAndStatusOrderByCreatedAtAsc(storeId, WaitingStatus.WAITING);
+        int order = 1;
+        for (Waiting waiting : waitingList) {
+            waiting.updateMyWaitingOrder(order++);
+        }
+    }
 }
