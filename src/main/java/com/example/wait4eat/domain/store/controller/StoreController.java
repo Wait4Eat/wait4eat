@@ -9,6 +9,9 @@ import com.example.wait4eat.domain.user.enums.UserRole;
 import com.example.wait4eat.global.auth.dto.AuthUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,9 +36,11 @@ public class StoreController {
 
     @GetMapping("/api/v1/stores")
     public ResponseEntity<List<GetStoreListResponse>> getStoreList(
-            @AuthenticationPrincipal AuthUser authUser
+            @AuthenticationPrincipal AuthUser authUser,
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable
     ) {
-        return ResponseEntity.ok(storeService.getStoreList());
+        return ResponseEntity.ok(storeService.getStoreList(pageable));
     }
 
     @GetMapping("/api/v1/stores/{storeId}")

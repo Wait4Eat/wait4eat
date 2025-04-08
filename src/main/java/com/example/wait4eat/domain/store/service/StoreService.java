@@ -13,6 +13,7 @@ import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +44,6 @@ public class StoreService {
                 .openTime(request.getOpenTime())
                 .closeTime(request.getCloseTime())
                 .description(request.getDescription())
-                .imageUrl(request.getImageUrl())
                 .depositAmount(request.getDepositAmount())
                 .build();
 
@@ -53,8 +53,9 @@ public class StoreService {
     }
 
     @Transactional(readOnly = true)
-    public List<GetStoreListResponse> getStoreList() {
-        return storeRepository.findAll().stream()
+    public List<GetStoreListResponse> getStoreList(Pageable pageable) {
+        return storeRepository.findAll(pageable)
+                .stream()
                 .map(GetStoreListResponse::from)
                 .toList();
     }
