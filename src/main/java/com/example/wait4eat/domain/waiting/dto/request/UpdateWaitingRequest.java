@@ -12,8 +12,7 @@ public class UpdateWaitingRequest {
     private WaitingStatus status;
 
     @Builder
-    public UpdateWaitingRequest(
-            @NotNull(message = "웨이팅 상태를 선택해주세요.")
+    private UpdateWaitingRequest(
             WaitingStatus status
     ) {
         this.status = status;
