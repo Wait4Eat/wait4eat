@@ -5,14 +5,13 @@ import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.Getter;
 
 @Getter
-public class ErrorResponse {
+public class ErrorResponse extends ApiResponse {
 
-    private ExceptionType type;
-    private String message;
+    private final ExceptionType type;
 
     public ErrorResponse(ExceptionType type, String message) {
+        super(type.getHttpStatus(), false, message);
         this.type = type;
-        this.message = message;
     }
 
     public static ErrorResponse from(CustomException e) {
