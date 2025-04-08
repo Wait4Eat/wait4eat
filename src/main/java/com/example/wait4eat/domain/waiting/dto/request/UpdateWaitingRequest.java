@@ -12,9 +12,7 @@ public class UpdateWaitingRequest {
     private WaitingStatus status;
 
     @Builder
-    private UpdateWaitingRequest(
-            WaitingStatus status
-    ) {
+    private UpdateWaitingRequest(WaitingStatus status) {
         this.status = status;
     }
 }
