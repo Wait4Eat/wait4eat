@@ -42,7 +42,7 @@ public class Store {
 
     private int depositAmount;
 
-    private int waitingTeamCount;
+    private int waitingTeamCount; // 가게의 현재 웨이팅 팀 수
 
     @CreatedDate
     private LocalDateTime createdAt;

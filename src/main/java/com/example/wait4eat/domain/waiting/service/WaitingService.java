@@ -92,7 +92,13 @@ public class WaitingService {
             throw new CustomException(ExceptionType.ALREADY_FINISHED_WAITING);
         }
 
+        // 가게의 웨이팅 팀 수 감소
+        Store store = waiting.getStore();
+        store.decrementWaitingTeamCount();
+
+        // 취소한 사용자의 웨이팅 순서는 변경할 필요 없고 웨이팅 상태만 변경
         updateWaitingStatusInternal(waiting, WaitingStatus.CANCELLED);
+
         return CancelWaitingResponse.from(waiting);
     }
 
