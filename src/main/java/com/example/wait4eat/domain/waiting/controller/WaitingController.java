@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
@@ -38,8 +39,8 @@ public class WaitingController {
     public ResponseEntity<Page<WaitingResponse>> getWaitings(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable long storeId,
-            @RequestParam(required = false) WaitingStatus status,
-            @PageableDefault(page = 1, size = 10) Pageable pageable
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(required = false) WaitingStatus status
     ) {
         return ResponseEntity.ok(waitingService.getWaitings(authUser.getUserId(), storeId, status, pageable));
     }
@@ -56,7 +57,7 @@ public class WaitingController {
     @GetMapping("/api/v1/waitings/me/history")
     public ResponseEntity<Page<MyPastWaitingResponse>> getMyPastWaitings(
             @AuthenticationPrincipal AuthUser authUser,
-            @PageableDefault(page = 1, size = 10) Pageable pageable
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(waitingService.getMyPastWaitings(authUser.getUserId(), pageable));
     }

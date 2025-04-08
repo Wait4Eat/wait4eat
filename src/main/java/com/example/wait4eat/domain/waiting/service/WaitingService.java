@@ -14,7 +14,6 @@ import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,7 +65,6 @@ public class WaitingService {
 
     @Transactional(readOnly = true)
     public Page<WaitingResponse> getWaitings(Long userId, Long storeId, WaitingStatus status, Pageable pageable) {
-        pageable = PageRequest.of(pageable.getPageNumber() - 1, pageable.getPageSize());
         return waitingRepository.findWaitingsByStoreId(storeId, status, pageable);
     }
 
@@ -78,7 +76,6 @@ public class WaitingService {
 
     @Transactional(readOnly = true)
     public Page<MyPastWaitingResponse> getMyPastWaitings(Long userId, Pageable pageable) {
-        pageable = PageRequest.of(pageable.getPageNumber() - 1, pageable.getPageSize());
         return waitingRepository.findMyPastWaitings(userId, pageable);
     }
 
