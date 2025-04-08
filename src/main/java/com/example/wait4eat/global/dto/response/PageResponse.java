@@ -1,6 +1,7 @@
 package com.example.wait4eat.global.dto.response;
 
 import com.example.wait4eat.global.dto.consts.ApiMessage;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ public class PageResponse<T> extends ApiResponse {
     private final int size;
     private final long totalElements;
     private final int totalPages;
+    @JsonProperty("last")
     private final boolean isLast;
 
     private PageResponse(Page<T> pageData, String message) {
