@@ -91,7 +91,7 @@ public class CouponService {
 
         // 발급받지 않은 쿠폰 검증
         if (coupon == null) {
-            throw new CustomException(ExceptionType.COUPON_NOT_OWNED);
+            throw new CustomException(ExceptionType.COUPON_NOT_FOUND);
         }
 
         return GetOneCouponResponse.from(coupon);
