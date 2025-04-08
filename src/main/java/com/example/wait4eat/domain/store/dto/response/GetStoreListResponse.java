@@ -9,13 +9,14 @@ import java.time.LocalTime;
 @Getter
 public class GetStoreListResponse {
 
-    private Long id;
-    private String name;
-    private String address;
-    private LocalTime openTime;
-    private LocalTime closeTime;
-    private String imageUrl;
-    private int depositAmount;
+    private final Long id;
+    private final String name;
+    private final String address;
+    private final LocalTime openTime;
+    private final LocalTime closeTime;
+    private final String imageUrl;
+    private final int depositAmount;
+    private final int waitingTeamCount;
 
     @Builder
     private GetStoreListResponse(
@@ -25,7 +26,8 @@ public class GetStoreListResponse {
             LocalTime openTime,
             LocalTime closeTime,
             String imageUrl,
-            int depositAmount
+            int depositAmount,
+            int waitingTeamCount
     ) {
         this.id = id;
         this.name = name;
@@ -34,6 +36,7 @@ public class GetStoreListResponse {
         this.closeTime = closeTime;
         this.imageUrl = imageUrl;
         this.depositAmount = depositAmount;
+        this.waitingTeamCount = waitingTeamCount;
     }
 
     public static GetStoreListResponse from(Store store) {
@@ -45,6 +48,7 @@ public class GetStoreListResponse {
                 .closeTime(store.getCloseTime())
                 .imageUrl(store.getImageUrl())
                 .depositAmount(store.getDepositAmount())
+                .waitingTeamCount(store.getWaitingTeamCount())
                 .build();
     }
 }

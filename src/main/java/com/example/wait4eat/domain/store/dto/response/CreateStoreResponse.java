@@ -11,16 +11,16 @@ import java.time.LocalTime;
 @Getter
 public class CreateStoreResponse {
 
-    private Long id;
-    private Long userId;
-    private String name;
-    private String address;
-    private LocalTime openTime;
-    private LocalTime closeTime;
-    private String description;
-    private String imageUrl;
-    private int depositAmount;
-    private LocalDateTime createdAt;
+    private final Long id;
+    private final Long userId;
+    private final String name;
+    private final String address;
+    private final LocalTime openTime;
+    private final LocalTime closeTime;
+    private final String description;
+    private final String imageUrl;
+    private final int depositAmount;
+    private final LocalDateTime createdAt;
 
     @Builder
     private CreateStoreResponse(

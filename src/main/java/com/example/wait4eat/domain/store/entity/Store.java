@@ -48,6 +48,8 @@ public class Store {
     @Column(nullable = false)
     private int depositAmount;
 
+    private int waitingTeamCount;
+
     @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -64,7 +66,8 @@ public class Store {
             LocalTime closeTime,
             String description,
             String imageUrl,
-            int depositAmount
+            int depositAmount,
+            int waitingTeamCount
     ) {
         this.user = user;
         this.name = name;
@@ -74,5 +77,18 @@ public class Store {
         this.description = description;
         this.imageUrl = imageUrl;
         this.depositAmount = depositAmount;
+        this.waitingTeamCount = waitingTeamCount;
+    }
+
+    // 웨이팅 팀 수를 증가
+    public void incrementWaitingTeamCount() {
+        this.waitingTeamCount++;
+    }
+
+    // 웨이팅 팀 수를 감소
+    public void decrementWaitingTeamCount() {
+        if (this.waitingTeamCount > 0) {
+            this.waitingTeamCount--;
+        }
     }
 }
