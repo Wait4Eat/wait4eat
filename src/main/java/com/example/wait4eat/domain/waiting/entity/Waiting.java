@@ -83,4 +83,8 @@ public class Waiting{
         }
     }
 
+    public void markAsCalled() {
+        this.myWaitingOrder = 0;
+    }
+
 }
