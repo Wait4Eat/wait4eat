@@ -12,4 +12,6 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     boolean existsByUserIdAndCouponEventId(Long userId, Long couponEventId);
 
     Page<Coupon> findAllByUser(User user, Pageable pageable);
+
+    Coupon findByUserIdAndCouponEventId(Long userId, Long couponEventId);
 }
