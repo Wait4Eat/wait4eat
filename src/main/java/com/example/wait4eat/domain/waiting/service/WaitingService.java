@@ -38,9 +38,8 @@ public class WaitingService {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
 
-        // 현재 가게의 총 웨이팅 팀 수 조회 및 업데이트 (동시성 제어 필요)
+        // 현재 가게의 총 웨이팅 팀 수 조회
         int currentTotalWaitingTeamCount = waitingRepository.countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
-        store.incrementWaitingTeamCount(); // 팀 수 증가
 
         // 고유한 주문 ID 생성 (UUID 사용)
         String orderId = UUID.randomUUID().toString();
@@ -57,6 +56,11 @@ public class WaitingService {
                 .build();
 
         Waiting savedWaiting = waitingRepository.save(waiting);
+
+        // 스토어의 전체 웨이팅 팀 수 증가 및 저장
+        store.incrementWaitingTeamCount();
+        storeRepository.save(store);
+
         return CreateWaitingResponse.from(savedWaiting);
     }
 
