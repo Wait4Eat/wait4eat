@@ -36,7 +36,6 @@ public class StoreController {
 
     @GetMapping("/api/v1/stores")
     public ResponseEntity<List<GetStoreListResponse>> getStoreList(
-            @AuthenticationPrincipal AuthUser authUser,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
@@ -45,7 +44,6 @@ public class StoreController {
 
     @GetMapping("/api/v1/stores/{storeId}")
     public ResponseEntity<GetStoreDetailResponse> getStoreDetail(
-            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long storeId
     ) {
         return ResponseEntity.ok(storeService.getStoreDetail(storeId));
