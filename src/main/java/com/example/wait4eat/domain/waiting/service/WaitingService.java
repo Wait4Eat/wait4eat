@@ -79,6 +79,7 @@ public class WaitingService {
         return waitingRepository.findMyPastWaitings(userId, pageable);
     }
 
+    // 사용자가 웨이팅 취소
     @Transactional
     public CancelWaitingResponse cancelMyWaiting(Long userId, Long waitingId) {
         Waiting waiting = waitingRepository.findById(waitingId)
@@ -96,8 +97,9 @@ public class WaitingService {
         Store store = waiting.getStore();
         store.decrementWaitingTeamCount();
 
-        // 취소한 사용자의 웨이팅 순서는 변경할 필요 없고 웨이팅 상태만 변경
-        updateWaitingStatusInternal(waiting, WaitingStatus.CANCELLED);
+        // 취소한 사용자의 웨이팅 순서 유지
+        // 웨이팅 상태만 변경하고 취소 시간 기록
+        waiting.cancel(getCurrentTime());
 
         return CancelWaitingResponse.from(waiting);
     }
@@ -107,8 +109,39 @@ public class WaitingService {
         Waiting waiting = waitingRepository.findById(waitingId)
                 .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
+        // 가게 주인 확인 로직
+        if (!waiting.getStore().getUser().getId().equals(userId)) {
+            throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
+        }
+
         WaitingStatus newStatus = updateWaitingRequest.getStatus();
-        updateWaitingStatusInternal(waiting, newStatus);
+
+        // 사장님 웨이팅 팀 호출
+        if (newStatus == WaitingStatus.CALLED && waiting.getStatus() == WaitingStatus.WAITING) {
+            // 가게의 웨이팅 팀 수 유지
+            // 호출된 사용자의 웨이팅 순서 0
+            waiting.call(getCurrentTime());
+            waiting.markAsCalled();
+        }
+
+        // 사장님 웨이팅 개별 취소
+        else if (newStatus == WaitingStatus.CANCELLED && waiting.getStatus() != WaitingStatus.CANCELLED) {
+            waiting.cancel(getCurrentTime());
+            // 가게 웨이팅 팀 수 감소
+            // 최소된 사용자의 웨이팅 순서 유지
+            Store store = waiting.getStore();
+            store.decrementWaitingTeamCount();
+        }
+
+        // 웨이팅 팀이 가게로 입장 완료
+        else if (newStatus == WaitingStatus.COMPLETED && waiting.getStatus() != WaitingStatus.COMPLETED) {
+            waiting.enter(getCurrentTime());
+            // 가게 웨이팅 팀 수 감소
+            // 입장한 사용자의 웨이팅 순서 0
+            waiting.markAsCalled();
+            Store store = waiting.getStore();
+            store.decrementWaitingTeamCount();
+        }
 
         return UpdateWaitingResponse.builder()
                 .waitingId(waiting.getId())
@@ -117,23 +150,6 @@ public class WaitingService {
                 .cancelledAt(waiting.getCancelledAt())
                 .enteredAt(waiting.getEnteredAt())
                 .build();
-    }
-
-    @Transactional
-    public void updateWaitingStatusInternal(Waiting waiting, WaitingStatus newStatus) {
-        LocalDateTime now = getCurrentTime();
-
-        if (waiting.getStatus() == newStatus) {
-            return;
-        }
-
-        if (newStatus == WaitingStatus.CALLED && waiting.getCalledAt() == null) {
-            waiting.call(now);
-        } else if (newStatus == WaitingStatus.CANCELLED && waiting.getCancelledAt() == null) {
-            waiting.cancel(now);
-        } else if (newStatus == WaitingStatus.COMPLETED && waiting.getEnteredAt() == null) {
-            waiting.enter(now);
-        }
     }
 
     private LocalDateTime getCurrentTime() {
