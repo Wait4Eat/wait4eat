@@ -38,7 +38,7 @@ public class Waiting{
     @Column(nullable = false)
     private int peopleCount;
 
-    private int myWaitingOrder;
+    private int myWaitingOrder; // 내 웨이팅 순서
 
     @Enumerated(EnumType.STRING)
     private WaitingStatus status;
@@ -82,4 +82,5 @@ public class Waiting{
             this.enteredAt = enteredAt;
         }
     }
+
 }
