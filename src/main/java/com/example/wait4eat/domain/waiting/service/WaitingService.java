@@ -38,6 +38,12 @@ public class WaitingService {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
 
+        // 현재 사용자의 활성 웨이팅 상태 확인
+        waitingRepository.findByUserIdAndStatus(userId, WaitingStatus.WAITING)
+                .ifPresent(waiting -> {
+                    throw new CustomException(ExceptionType.SINGLE_WAIT_ALLOWED);
+                });
+
         // 현재 가게의 총 웨이팅 팀 수 조회
         int currentTotalWaitingTeamCount = waitingRepository.countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
 
@@ -66,6 +72,14 @@ public class WaitingService {
 
     @Transactional(readOnly = true)
     public Page<WaitingResponse> getWaitings(Long userId, Long storeId, WaitingStatus status, Pageable pageable) {
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
+
+        // 해당 userId가 가게를 생성한 본인인지 확인
+        if (!store.getUser().getId().equals(userId)) {
+            throw new CustomException(ExceptionType.NO_PERMISSION_TO_ACCESS_STORE_WAITING);
+        }
+
         return waitingRepository.findWaitingsByStoreId(storeId, status, pageable);
     }
 
