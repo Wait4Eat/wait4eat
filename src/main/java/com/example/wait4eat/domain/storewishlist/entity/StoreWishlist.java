@@ -41,7 +41,7 @@ public class StoreWishlist {
     private LocalDateTime createdAt;
 
     @Builder
-    private StoreWishlist(User user, Store store) {
+    public StoreWishlist(User user, Store store) {
         this.user = user;
         this.store = store;
     }
