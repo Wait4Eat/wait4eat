@@ -64,12 +64,11 @@ public class WaitingController {
 
     @Secured(UserRole.Authority.USER)
     @DeleteMapping("/api/v1/waitings/{waitingId}")
-    public ResponseEntity<Void> cancelMyWaiting(
+    public ResponseEntity<CancelWaitingResponse> cancelMyWaiting(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long waitingId
     ) {
-        waitingService.cancelMyWaiting(authUser.getUserId(), waitingId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(waitingService.cancelMyWaiting(authUser.getUserId(), waitingId));
     }
 
     @Secured(UserRole.Authority.OWNER)
