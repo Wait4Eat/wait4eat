@@ -13,6 +13,8 @@ public class WaitingResponse {
     private final Long storeId;
     private final Long userId;
     private final int peopleCount;
+    private final int waitingTeamCount;
+    private final int myWaitingOrder;
     private final WaitingStatus status;
     private final LocalDateTime createdAt;
     private final LocalDateTime calledAt;
@@ -25,6 +27,8 @@ public class WaitingResponse {
             Long storeId,
             Long userId,
             int peopleCount,
+            int waitingTeamCount,
+            int myWaitingOrder,
             WaitingStatus status,
             LocalDateTime createdAt,
             LocalDateTime calledAt,
@@ -35,6 +39,8 @@ public class WaitingResponse {
         this.storeId = storeId;
         this.userId = userId;
         this.peopleCount = peopleCount;
+        this.waitingTeamCount = waitingTeamCount;
+        this.myWaitingOrder = myWaitingOrder;
         this.status = status;
         this.createdAt = createdAt;
         this.calledAt = calledAt;
@@ -48,6 +54,8 @@ public class WaitingResponse {
                 .storeId(waiting.getStore().getId())
                 .userId(waiting.getUser().getId())
                 .peopleCount(waiting.getPeopleCount())
+                .waitingTeamCount(waiting.getMyWaitingOrder())
+                .myWaitingOrder(waiting.getMyWaitingOrder())
                 .status(waiting.getStatus())
                 .createdAt(waiting.getCreatedAt())
                 .calledAt(waiting.getCalledAt())

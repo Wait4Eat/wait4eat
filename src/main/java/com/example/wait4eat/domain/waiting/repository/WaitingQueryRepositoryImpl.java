@@ -52,41 +52,72 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
         if (status != null) {
             builder.and(waiting.status.eq(status));
         }
+//
+//        List<Tuple> rows = queryFactory
+//                .select(
+//                        waiting.id,
+//                        waiting.store.id,
+//                        waiting.user.id,
+//                        waiting.peopleCount,
+//                        store.waitingTeamCount,
+//                        waiting.myWaitingOrder,
+//                        waiting.status,
+//                        waiting.createdAt,
+//                        waiting.calledAt,
+//                        waiting.cancelledAt,
+//                        waiting.enteredAt
+//                )
+//                .from(waiting)
+//                .join(waiting.store, store).fetchJoin()
+//                .where(builder)
+//                .orderBy(waiting.createdAt.desc())
+//                .offset(pageable.getOffset())
+//                .limit(pageable.getPageSize())
+//                .fetch();
+//
+//        List<WaitingResponse> content = new ArrayList<>();
+//        for (Tuple row : rows) {
+//            WaitingResponse waitingResponse = WaitingResponse.builder()
+//                    .waitingId(row.get(waiting.id))
+//                    .storeId(row.get(waiting.store.id))
+//                    .userId(row.get(waiting.user.id))
+//                    .peopleCount(row.get(waiting.peopleCount))
+//                    .waitingTeamCount(row.get(store.waitingTeamCount))
+//                    .myWaitingOrder(row.get(waiting.myWaitingOrder))
+//                    .status(row.get(waiting.status))
+//                    .createdAt(row.get(waiting.createdAt))
+//                    .calledAt(row.get(waiting.calledAt))
+//                    .cancelledAt(row.get(waiting.cancelledAt))
+//                    .enteredAt(row.get(waiting.enteredAt))
+//                    .build();
+//            content.add(waitingResponse);
+//        }
 
-        List<Tuple> rows = queryFactory
-                .select(
-                        waiting.id,
-                        waiting.store.id,
-                        waiting.user.id,
-                        waiting.peopleCount,
-                        waiting.status,
-                        waiting.createdAt,
-                        waiting.calledAt,
-                        waiting.cancelledAt,
-                        waiting.enteredAt
-                )
+        List<Waiting> waitings = queryFactory // Tuple 대신 Waiting 엔티티 직접 선택
+                .select(waiting)
                 .from(waiting)
+                .join(waiting.store, store).fetchJoin()
                 .where(builder)
                 .orderBy(waiting.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        List<WaitingResponse> content = new ArrayList<>();
-        for (Tuple row : rows) {
-            WaitingResponse waitingResponse = WaitingResponse.builder()
-                    .waitingId(row.get(waiting.id))
-                    .storeId(row.get(waiting.store.id))
-                    .userId(row.get(waiting.user.id))
-                    .peopleCount(row.get(waiting.peopleCount))
-                    .status(row.get(waiting.status))
-                    .createdAt(row.get(waiting.createdAt))
-                    .calledAt(row.get(waiting.calledAt))
-                    .cancelledAt(row.get(waiting.cancelledAt))
-                    .enteredAt(row.get(waiting.enteredAt))
-                    .build();
-            content.add(waitingResponse);
-        }
+        List<WaitingResponse> content = waitings.stream()
+                .map(waiting -> WaitingResponse.builder()
+                        .waitingId(waiting.getId())
+                        .storeId(waiting.getStore().getId())
+                        .userId(waiting.getUser().getId())
+                        .peopleCount(waiting.getPeopleCount())
+                        .waitingTeamCount(waiting.getStore().getWaitingTeamCount())
+                        .myWaitingOrder(waiting.getMyWaitingOrder())
+                        .status(waiting.getStatus())
+                        .createdAt(waiting.getCreatedAt())
+                        .calledAt(waiting.getCalledAt())
+                        .cancelledAt(waiting.getCancelledAt())
+                        .enteredAt(waiting.getEnteredAt())
+                        .build())
+                .collect(Collectors.toList());
 
         Long total = queryFactory
                 .select(waiting.count())
