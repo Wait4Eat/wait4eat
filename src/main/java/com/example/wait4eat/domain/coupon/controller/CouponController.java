@@ -2,6 +2,7 @@ package com.example.wait4eat.domain.coupon.controller;
 
 import com.example.wait4eat.domain.coupon.dto.response.CreateCouponResponse;
 import com.example.wait4eat.domain.coupon.dto.response.GetAllCouponResponse;
+import com.example.wait4eat.domain.coupon.dto.response.GetOneCouponResponse;
 import com.example.wait4eat.domain.coupon.service.CouponService;
 import com.example.wait4eat.domain.user.enums.UserRole;
 import com.example.wait4eat.global.auth.dto.AuthUser;
@@ -38,8 +39,16 @@ public class CouponController {
             @PageableDefault(page = 0, size = 10, sort = "issuedAt", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
-        List<GetAllCouponResponse> response = couponService.getAllCoupon(authUser, pageable);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(couponService.getAllCoupon(authUser, pageable));
+    }
+
+    @Secured(UserRole.Authority.USER)
+    @GetMapping("/api/v1/coupons/{couponEventId}")
+    public ResponseEntity<GetOneCouponResponse> getOneCoupon(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long couponEventId
+    ) {
+        return ResponseEntity.ok(couponService.getOneCoupon(authUser, couponEventId));
     }
 
 }

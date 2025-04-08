@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
-public class CreateCouponResponse {
+public class GetOneCouponResponse {
 
     private final Long id;
     private final Long userId;
@@ -21,7 +21,7 @@ public class CreateCouponResponse {
     private final LocalDateTime usedAt;
 
     @Builder
-    private CreateCouponResponse(
+    private GetOneCouponResponse(
             Long id,
             Long userId,
             String storeName,
@@ -43,8 +43,8 @@ public class CreateCouponResponse {
         this.usedAt = usedAt;
     }
 
-    public static CreateCouponResponse from(Coupon coupon) {
-        return CreateCouponResponse.builder()
+    public static GetOneCouponResponse from(Coupon coupon) {
+        return GetOneCouponResponse.builder()
                 .id(coupon.getId())
                 .userId(coupon.getUser().getId())
                 .storeName(coupon.getCouponEvent().getStore().getName())
