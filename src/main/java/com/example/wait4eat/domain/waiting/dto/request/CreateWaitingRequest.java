@@ -13,9 +13,7 @@ public class CreateWaitingRequest {
     private int peopleCount;
 
     @Builder
-    private CreateWaitingRequest(
-            int peopleCount
-    ) {
+    private CreateWaitingRequest(int peopleCount) {
         this.peopleCount = peopleCount;
     }
 
