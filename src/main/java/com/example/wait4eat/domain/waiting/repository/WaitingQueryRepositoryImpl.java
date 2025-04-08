@@ -14,7 +14,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -52,53 +51,12 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
         if (status != null) {
             builder.and(waiting.status.eq(status));
         }
-//
-//        List<Tuple> rows = queryFactory
-//                .select(
-//                        waiting.id,
-//                        waiting.store.id,
-//                        waiting.user.id,
-//                        waiting.peopleCount,
-//                        store.waitingTeamCount,
-//                        waiting.myWaitingOrder,
-//                        waiting.status,
-//                        waiting.createdAt,
-//                        waiting.calledAt,
-//                        waiting.cancelledAt,
-//                        waiting.enteredAt
-//                )
-//                .from(waiting)
-//                .join(waiting.store, store).fetchJoin()
-//                .where(builder)
-//                .orderBy(waiting.createdAt.desc())
-//                .offset(pageable.getOffset())
-//                .limit(pageable.getPageSize())
-//                .fetch();
-//
-//        List<WaitingResponse> content = new ArrayList<>();
-//        for (Tuple row : rows) {
-//            WaitingResponse waitingResponse = WaitingResponse.builder()
-//                    .waitingId(row.get(waiting.id))
-//                    .storeId(row.get(waiting.store.id))
-//                    .userId(row.get(waiting.user.id))
-//                    .peopleCount(row.get(waiting.peopleCount))
-//                    .waitingTeamCount(row.get(store.waitingTeamCount))
-//                    .myWaitingOrder(row.get(waiting.myWaitingOrder))
-//                    .status(row.get(waiting.status))
-//                    .createdAt(row.get(waiting.createdAt))
-//                    .calledAt(row.get(waiting.calledAt))
-//                    .cancelledAt(row.get(waiting.cancelledAt))
-//                    .enteredAt(row.get(waiting.enteredAt))
-//                    .build();
-//            content.add(waitingResponse);
-//        }
 
-        List<Waiting> waitings = queryFactory // Tuple 대신 Waiting 엔티티 직접 선택
+        List<Waiting> waitings = queryFactory
                 .select(waiting)
                 .from(waiting)
                 .join(waiting.store, store).fetchJoin()
                 .where(builder)
-                .orderBy(waiting.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -119,13 +77,13 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                         .build())
                 .collect(Collectors.toList());
 
-        Long total = queryFactory
+        Long total = Optional.ofNullable(queryFactory
                 .select(waiting.count())
                 .from(waiting)
                 .where(builder)
-                .fetchOne();
+                .fetchOne()).orElse(0L);
 
-        return new PageImpl<>(content, pageable, Optional.ofNullable(total).orElse(0L));
+        return new PageImpl<>(content, pageable, total);
     }
 
     @Override
@@ -180,7 +138,6 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                         waiting.user.id.eq(userId),
                         waiting.status.in(WaitingStatus.CANCELLED, WaitingStatus.COMPLETED)
                 )
-                .orderBy(waiting.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -189,16 +146,16 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .map(MyPastWaitingResponse::from)
                 .collect(Collectors.toList());
 
-        Long total = queryFactory
+        Long total = Optional.ofNullable(queryFactory
                 .select(waiting.count())
                 .from(waiting)
                 .where(
                         waiting.user.id.eq(userId),
                         waiting.status.in(WaitingStatus.CANCELLED, WaitingStatus.COMPLETED)
                 )
-                .fetchOne();
+                .fetchOne()).orElse(0L);
 
-        return new PageImpl<>(content, pageable, Optional.ofNullable(total).orElse(0L));
+        return new PageImpl<>(content, pageable, total);
     }
 
 }
