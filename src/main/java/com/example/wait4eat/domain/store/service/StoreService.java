@@ -44,7 +44,6 @@ public class StoreService {
                 .openTime(request.getOpenTime())
                 .closeTime(request.getCloseTime())
                 .description(request.getDescription())
-                .imageUrl(request.getImageUrl())
                 .depositAmount(request.getDepositAmount())
                 .build();
 
