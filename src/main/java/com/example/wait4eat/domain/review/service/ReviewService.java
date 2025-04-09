@@ -9,6 +9,8 @@ import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,5 +44,11 @@ public class ReviewService {
                 .createdAt(savedReview.getCreatedAt())
                 .modifiedAt(savedReview.getModifiedAt())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReviewResponse> getAllReview(Long storeId, Pageable pageable) {
+        return reviewRepository.getAllByStoreId(storeId, pageable)
+                .map(ReviewResponse::from);
     }
 }

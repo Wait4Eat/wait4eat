@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.review.dto.response;
 
+import com.example.wait4eat.domain.review.entity.Review;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -24,5 +25,17 @@ public class ReviewResponse {
         this.rating = rating;
         this.createdAt = createdAt;
         this.modifiedAt = modifiedAt;
+    }
+
+    public static ReviewResponse from(Review review) {
+        return ReviewResponse.builder()
+                .id(review.getId())
+                .userId(review.getUserId())
+                .storeId(review.getStoreId())
+                .content(review.getContent())
+                .rating(review.getRating())
+                .createdAt(review.getCreatedAt())
+                .modifiedAt(review.getModifiedAt())
+                .build();
     }
 }
