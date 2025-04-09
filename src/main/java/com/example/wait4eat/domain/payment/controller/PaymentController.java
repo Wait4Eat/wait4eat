@@ -31,7 +31,6 @@ public class PaymentController {
         return ResponseEntity.ok(SuccessResponse.from(response));
     }
 
-    @Secured("ROLE_USER")
     @GetMapping("/api/v1/payments/success")
     public ResponseEntity<SuccessResponse<SuccessPaymentResponse>> handlePaymentSuccess(
             @RequestParam String paymentKey,
@@ -42,7 +41,6 @@ public class PaymentController {
         return ResponseEntity.ok(SuccessResponse.from(response));
     }
 
-    @Secured("ROLE_USER")
     @GetMapping("/api/v1/payments/fail")
     public ResponseEntity<ErrorResponse> handlePaymentFail(
             @RequestParam(required = false) String message
@@ -58,7 +56,6 @@ public class PaymentController {
                 .body(ErrorResponse.from(customException));
     }
 
-    @Secured("ROLE_USER")
     @PostMapping("/api/v1/payments/{paymentId}/refund")
     public ResponseEntity<SuccessResponse<RefundPaymentResponse>> refundPayment(
             @PathVariable Long paymentId,
