@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.review.entity;
 
+import com.example.wait4eat.domain.review.dto.request.UpdateReviewRequest;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -52,5 +53,10 @@ public class Review {
 
     public Long getStoreId() {
         return (waiting != null) ? waiting.getStore().getId() : null;
+    }
+
+    public void update(UpdateReviewRequest request) {
+        this.content = request.getContent();
+        this.rating = request.getRating();
     }
 }
