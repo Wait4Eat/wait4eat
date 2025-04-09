@@ -162,13 +162,7 @@ public class WaitingService {
             reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
         }
 
-        return UpdateWaitingResponse.builder()
-                .waitingId(waiting.getId())
-                .status(waiting.getStatus())
-                .calledAt(waiting.getCalledAt())
-                .cancelledAt(waiting.getCancelledAt())
-                .enteredAt(waiting.getEnteredAt())
-                .build();
+        return UpdateWaitingResponse.from(waiting);
     }
 
     private LocalDateTime getCurrentTime() {
