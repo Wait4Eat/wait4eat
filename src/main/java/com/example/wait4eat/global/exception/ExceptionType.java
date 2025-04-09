@@ -45,7 +45,7 @@ public enum ExceptionType {
     // Waiting
     WAITING_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 웨이팅을 찾을 수 없습니다."),
     NO_CURRENT_WAITING(HttpStatus.NOT_FOUND, "현재 대기 중인 웨이팅이 없습니다."),
-    INVALID_WAITING_TYPE(HttpStatus.BAD_REQUEST, "유효하지 않은 웨이팅 타입입니다."),
+    INVALID_WAITING_STATUS_UPDATE(HttpStatus.BAD_REQUEST, "유효하지 않은 웨이팅 상태 변경입니다."),
     UNAUTHORIZED_CANCEL_WAITING(HttpStatus.FORBIDDEN, "웨이팅 취소 권한이 없습니다."),
     ALREADY_FINISHED_WAITING(HttpStatus.BAD_REQUEST, "이미 완료 또는 취소된 웨이팅입니다."),
     SINGLE_WAIT_ALLOWED(HttpStatus.BAD_REQUEST, "한 번에 하나의 웨이팅만 허용됩니다."),

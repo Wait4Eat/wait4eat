@@ -131,20 +131,46 @@ public class WaitingService {
         }
 
         WaitingStatus newStatus = updateWaitingRequest.getStatus();
+        WaitingStatus currentStatus = waiting.getStatus();
+
+        boolean updated = false;
+
+        // 웨이팅 상태 순서 정의
+        List<WaitingStatus> statusOrder = List.of(
+                WaitingStatus.REQUESTED,
+                WaitingStatus.WAITING,
+                WaitingStatus.CALLED,
+                WaitingStatus.COMPLETED
+        );
+
+        // 상태 변경 가능 여부 확인 (역행 방지)
+        boolean canAdvance = false;
+        if (statusOrder.indexOf(newStatus) > statusOrder.indexOf(currentStatus)) {
+            canAdvance = true;
+        }
 
         // 사장님 웨이팅 팀 호출
-        if (newStatus == WaitingStatus.CALLED && waiting.getStatus() == WaitingStatus.WAITING) {
+        if (newStatus == WaitingStatus.CALLED && currentStatus == WaitingStatus.WAITING && canAdvance) {
             handleCalled(waiting);
+            updated = true;
         }
 
-        // 사장님 웨이팅 개별 취소
-        else if (newStatus == WaitingStatus.CANCELLED && waiting.getStatus() != WaitingStatus.CANCELLED) {
+        // 사장님 웨이팅 개별 취소 (예외적으로 모든 상태에서 CANCELLED 가능, 단 COMPLETED 제외)
+        else if (newStatus == WaitingStatus.CANCELLED && currentStatus != WaitingStatus.CANCELLED && currentStatus != WaitingStatus.COMPLETED) {
             handleCancelled(waiting);
+            updated = true;
         }
+
 
         // 웨이팅 팀이 가게로 입장 완료
-        else if (newStatus == WaitingStatus.COMPLETED && waiting.getStatus() != WaitingStatus.COMPLETED) {
+        else if (newStatus == WaitingStatus.COMPLETED && currentStatus == WaitingStatus.CALLED && canAdvance) {
             handleCompleted(waiting);
+            updated = true;
+        }
+
+        if (!updated) {
+            throw new CustomException(ExceptionType.INVALID_WAITING_STATUS_UPDATE,
+                    String.format("현재 상태: %s, 요청 상태: %s", currentStatus, newStatus));
         }
 
         return UpdateWaitingResponse.from(waiting);
