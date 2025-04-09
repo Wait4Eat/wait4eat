@@ -4,6 +4,7 @@ import com.example.wait4eat.domain.notification.dto.response.NotificationRespons
 import com.example.wait4eat.domain.notification.service.NotificationService;
 import com.example.wait4eat.domain.notification.sse.SseEmitterManager;
 import com.example.wait4eat.global.auth.dto.AuthUser;
+import com.example.wait4eat.global.dto.response.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -33,11 +34,13 @@ public class NotificationController {
     }
 
     @GetMapping("/api/v1/notifications")
-    public ResponseEntity<List<NotificationResponse>> getNotifications(
+    public ResponseEntity<PageResponse<NotificationResponse>> getNotifications(
             @AuthenticationPrincipal AuthUser authUser,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
-        return ResponseEntity.ok(notificationService.getNotifications(authUser.getUserId(), pageable));
+        return ResponseEntity.ok(
+                PageResponse.from(notificationService.getNotifications(authUser.getUserId(), pageable))
+        );
     }
 }
