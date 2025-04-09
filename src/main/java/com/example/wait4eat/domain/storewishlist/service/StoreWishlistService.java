@@ -8,7 +8,6 @@ import com.example.wait4eat.domain.storewishlist.repository.StoreWishlistReposit
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.global.auth.dto.AuthUser;
-import com.example.wait4eat.global.dto.response.PageResponse;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +15,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -60,12 +57,7 @@ public class StoreWishlistService {
         User findUser = findUser(authUser);
 
         return storeWishlistRepository.findAllByUser(findUser, pageable)
-                .map(storeWishlist -> StoreWishlistResponse.builder()
-                        .id(storeWishlist.getId())
-                        .store(storeWishlist.getStore())
-                        .createdAt(storeWishlist.getCreatedAt())
-                        .build()
-                );
+                .map(StoreWishlistResponse::from);
     }
 
     private User findUser(AuthUser authUser) {
