@@ -8,10 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CreateReviewRequest {
-
-    @NotNull
-    private Long waitingId;
+public class UpdateReviewRequest {
 
     @NotBlank(message = "내용 입력은 필수입니다.")
     private String content;

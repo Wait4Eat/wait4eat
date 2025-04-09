@@ -60,6 +60,7 @@ public enum ExceptionType {
     ALREADY_REVIEW_EXISTS(HttpStatus.CONFLICT, "이미 리뷰를 작성하였습니다."),
 
     // Review
+    REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 리뷰를 찾을 수 없습니다."),
     ALREADY_REVIEW_EXISTS(HttpStatus.CONFLICT, "이미 리뷰를 작성하였습니다."),
 
     // Server Error

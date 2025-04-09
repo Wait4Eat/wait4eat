@@ -1,6 +1,7 @@
 package com.example.wait4eat.domain.review.service;
 
 import com.example.wait4eat.domain.review.dto.request.CreateReviewRequest;
+import com.example.wait4eat.domain.review.dto.request.UpdateReviewRequest;
 import com.example.wait4eat.domain.review.dto.response.ReviewResponse;
 import com.example.wait4eat.domain.review.entity.Review;
 import com.example.wait4eat.domain.review.repository.ReviewRepository;
@@ -42,15 +43,7 @@ public class ReviewService {
                 .rating(request.getRating())
                 .build());
 
-        return ReviewResponse.builder()
-                .id(savedReview.getId())
-                .userId(savedReview.getUserId())
-                .storeId(savedReview.getStoreId())
-                .content(savedReview.getContent())
-                .rating(savedReview.getRating())
-                .createdAt(savedReview.getCreatedAt())
-                .modifiedAt(savedReview.getModifiedAt())
-                .build();
+        return ReviewResponse.from(savedReview);
     }
 
     @Transactional(readOnly = true)
@@ -69,5 +62,19 @@ public class ReviewService {
         );
         return reviewRepository.getAllByUserId(findUser.getId(), pageable)
                 .map(ReviewResponse::from);
+    }
+
+    @Transactional
+    public ReviewResponse updateReview(Long reviewId, AuthUser authUser, UpdateReviewRequest request) {
+        Review findReview = reviewRepository.findById(reviewId).orElseThrow(
+                () -> new CustomException(ExceptionType.REVIEW_NOT_FOUND)
+        );
+        if (!findReview.getUserId().equals(authUser.getUserId())) {
+            throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
+        }
+
+        findReview.update(request);
+        Review updatedReview = reviewRepository.save(findReview);
+        return ReviewResponse.from(updatedReview);
     }
 }

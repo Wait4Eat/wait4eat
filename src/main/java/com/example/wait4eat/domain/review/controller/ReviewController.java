@@ -1,6 +1,7 @@
 package com.example.wait4eat.domain.review.controller;
 
 import com.example.wait4eat.domain.review.dto.request.CreateReviewRequest;
+import com.example.wait4eat.domain.review.dto.request.UpdateReviewRequest;
 import com.example.wait4eat.domain.review.dto.response.ReviewResponse;
 import com.example.wait4eat.domain.review.service.ReviewService;
 import com.example.wait4eat.domain.user.enums.UserRole;
@@ -40,12 +41,23 @@ public class ReviewController {
     }
 
     @Secured(UserRole.Authority.USER)
-    @GetMapping("/api/v1/user/reviews")
+    @GetMapping("/api/v1/users/reviews")
     public ResponseEntity<PageResponse<ReviewResponse>> getAllMyReview(
             @AuthenticationPrincipal AuthUser authUser,
             @PageableDefault(page = 0, size = 10, sort = "modifiedAt", direction = Sort.Direction.DESC) Pageable pageable
             ) {
         Page<ReviewResponse> response = reviewService.getAllMyReview(authUser, pageable);
         return ResponseEntity.ok(PageResponse.from(response));
+    }
+
+    @Secured(UserRole.Authority.USER)
+    @PutMapping("/api/v1/stores/reviews/{reviewId}")
+    public ResponseEntity<SuccessResponse<ReviewResponse>> updateReview(
+            @PathVariable Long reviewId,
+            @AuthenticationPrincipal AuthUser authUser,
+            @RequestBody UpdateReviewRequest request
+            ) {
+        ReviewResponse response = reviewService.updateReview(reviewId, authUser, request);
+        return ResponseEntity.ok(SuccessResponse.from(response));
     }
 }
