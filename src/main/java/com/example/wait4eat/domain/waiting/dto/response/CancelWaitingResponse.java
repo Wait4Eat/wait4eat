@@ -1,6 +1,5 @@
 package com.example.wait4eat.domain.waiting.dto.response;
 
-import com.example.wait4eat.domain.waiting.entity.Waiting;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -13,9 +12,9 @@ public class CancelWaitingResponse {
         this.message = message;
     }
 
-    public static CancelWaitingResponse from(Waiting waiting) {
+    public static CancelWaitingResponse from(String message) {
         return CancelWaitingResponse.builder()
-                .message("웨이팅이 성공적으로 취소되었습니다.")
+                .message(message)
                 .build();
     }
 }
