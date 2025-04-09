@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.storewishlist.controller;
 
+import com.example.wait4eat.domain.storewishlist.dto.response.DeleteStoreWishlistResponse;
 import com.example.wait4eat.domain.storewishlist.dto.response.StoreWishlistResponse;
 import com.example.wait4eat.domain.storewishlist.service.StoreWishlistService;
 import com.example.wait4eat.domain.user.enums.UserRole;
@@ -23,16 +24,16 @@ public class StoreWishlistController {
 
     @Secured(UserRole.Authority.USER)
     @PostMapping("/api/v1/storewishlists/{storeId}")
-    public ResponseEntity<SuccessResponse<Void>> createWishlist(@PathVariable Long storeId, @AuthenticationPrincipal AuthUser authUser) {
-        storeWishlistService.createWishlist(storeId,authUser);
-        return ResponseEntity.ok(SuccessResponse.from("가게를 찜하였습니다"));
+    public ResponseEntity<SuccessResponse<StoreWishlistResponse>> createWishlist(@PathVariable Long storeId, @AuthenticationPrincipal AuthUser authUser) {
+        StoreWishlistResponse response = storeWishlistService.createWishlist(storeId, authUser);
+        return ResponseEntity.ok(SuccessResponse.from(response));
     }
 
     @Secured(UserRole.Authority.USER)
     @DeleteMapping("/api/v1/storewishlists/{storeWishlistsId}")
-    public ResponseEntity<SuccessResponse<Void>> deleteWishlist(@PathVariable Long storeWishlistsId, @AuthenticationPrincipal AuthUser authUser) {
-        storeWishlistService.deleteWishlist(storeWishlistsId, authUser);
-        return ResponseEntity.ok(SuccessResponse.from("찜하기를 취소 하였습니다."));
+    public ResponseEntity<SuccessResponse<DeleteStoreWishlistResponse>> deleteWishlist(@PathVariable Long storeWishlistsId, @AuthenticationPrincipal AuthUser authUser) {
+        DeleteStoreWishlistResponse response = storeWishlistService.deleteWishlist(storeWishlistsId, authUser);
+        return ResponseEntity.ok(SuccessResponse.from(response));
     }
 
     @Secured(UserRole.Authority.USER)
