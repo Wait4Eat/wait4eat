@@ -134,35 +134,40 @@ public class WaitingService {
 
         // 사장님 웨이팅 팀 호출
         if (newStatus == WaitingStatus.CALLED && waiting.getStatus() == WaitingStatus.WAITING) {
-            // 가게의 웨이팅 팀 수 유지
-            // 호출된 사용자의 웨이팅 순서 0
-            waiting.call(getCurrentTime());
-            waiting.markAsCalled();
+            handleCalled(waiting);
         }
 
         // 사장님 웨이팅 개별 취소
         else if (newStatus == WaitingStatus.CANCELLED && waiting.getStatus() != WaitingStatus.CANCELLED) {
-            waiting.cancel(getCurrentTime());
-            // 가게 웨이팅 팀 수 감소
-            // 최소된 사용자의 웨이팅 순서 유지
-            Store store = waiting.getStore();
-            store.decrementWaitingTeamCount();
-
-            reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
+            handleCancelled(waiting);
         }
 
         // 웨이팅 팀이 가게로 입장 완료
         else if (newStatus == WaitingStatus.COMPLETED && waiting.getStatus() != WaitingStatus.COMPLETED) {
-            waiting.enter(getCurrentTime());
-            // 가게 웨이팅 팀 수 감소
-            // 입장한 사용자의 웨이팅 순서 0
-            waiting.markAsCalled();
-            Store store = waiting.getStore();
-            store.decrementWaitingTeamCount();
-            reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
+            handleCompleted(waiting);
         }
 
         return UpdateWaitingResponse.from(waiting);
+    }
+
+    private void handleCalled(Waiting waiting) {
+        waiting.call(getCurrentTime());
+        waiting.markAsCalled(); // 가게의 웨이팅 팀 수 유지, 호출된 사용자의 웨이팅 순서 0
+    }
+
+    private void handleCancelled(Waiting waiting) {
+        waiting.cancel(getCurrentTime());
+        Store store = waiting.getStore();
+        store.decrementWaitingTeamCount();  // 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지
+        reorderWaitingQueue(store.getId()); // 전체 재정렬 호출
+    }
+
+    private void handleCompleted(Waiting waiting) {
+        waiting.enter(getCurrentTime());
+        waiting.markAsCalled();
+        Store store = waiting.getStore();
+        store.decrementWaitingTeamCount();  // 가게 웨이팅 팀 수 감소, 입장한 사용자의 웨이팅 순서 0
+        reorderWaitingQueue(store.getId()); // 전체 재정렬 호출
     }
 
     private LocalDateTime getCurrentTime() {
