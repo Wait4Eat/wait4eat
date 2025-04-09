@@ -2,7 +2,6 @@ package com.example.wait4eat.domain.storewishlist.service;
 
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
-import com.example.wait4eat.domain.storewishlist.dto.response.DeleteStoreWishlistResponse;
 import com.example.wait4eat.domain.storewishlist.dto.response.StoreWishlistResponse;
 import com.example.wait4eat.domain.storewishlist.entity.StoreWishlist;
 import com.example.wait4eat.domain.storewishlist.repository.StoreWishlistRepository;

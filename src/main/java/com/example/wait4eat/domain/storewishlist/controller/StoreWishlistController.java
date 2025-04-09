@@ -1,6 +1,5 @@
 package com.example.wait4eat.domain.storewishlist.controller;
 
-import com.example.wait4eat.domain.storewishlist.dto.response.DeleteStoreWishlistResponse;
 import com.example.wait4eat.domain.storewishlist.dto.response.StoreWishlistResponse;
 import com.example.wait4eat.domain.storewishlist.service.StoreWishlistService;
 import com.example.wait4eat.domain.user.enums.UserRole;
@@ -31,7 +30,7 @@ public class StoreWishlistController {
 
     @Secured(UserRole.Authority.USER)
     @DeleteMapping("/api/v1/storewishlists/{storeWishlistsId}")
-    public ResponseEntity<SuccessResponse<DeleteStoreWishlistResponse>> deleteWishlist(@PathVariable Long storeWishlistsId, @AuthenticationPrincipal AuthUser authUser) {
+    public ResponseEntity<SuccessResponse<Void>> deleteWishlist(@PathVariable Long storeWishlistsId, @AuthenticationPrincipal AuthUser authUser) {
         storeWishlistService.deleteWishlist(storeWishlistsId, authUser);
         return ResponseEntity.ok(SuccessResponse.from("요청이 성공적으로 처리되었습니다."));
     }
