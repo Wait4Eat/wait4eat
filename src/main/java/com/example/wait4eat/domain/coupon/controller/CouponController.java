@@ -6,6 +6,8 @@ import com.example.wait4eat.domain.coupon.dto.response.GetOneCouponResponse;
 import com.example.wait4eat.domain.coupon.service.CouponService;
 import com.example.wait4eat.domain.user.enums.UserRole;
 import com.example.wait4eat.global.auth.dto.AuthUser;
+import com.example.wait4eat.global.dto.response.PageResponse;
+import com.example.wait4eat.global.dto.response.SuccessResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -25,30 +27,30 @@ public class CouponController {
 
     @Secured(UserRole.Authority.USER)
     @PostMapping("/api/v1/coupons/{couponEventId}")
-    public ResponseEntity<CreateCouponResponse> createCoupon(
+    public ResponseEntity<SuccessResponse<CreateCouponResponse>> createCoupon(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long couponEventId
     ) {
-        return ResponseEntity.ok(couponService.createCoupon(authUser, couponEventId));
+        return ResponseEntity.ok(SuccessResponse.from(couponService.createCoupon(authUser, couponEventId)));
     }
 
     @Secured(UserRole.Authority.USER)
     @GetMapping("/api/v1/coupons")
-    public ResponseEntity<List<GetAllCouponResponse>> getAllCoupon(
+    public ResponseEntity<PageResponse<GetAllCouponResponse>> getAllCoupon(
             @AuthenticationPrincipal AuthUser authUser,
             @PageableDefault(page = 0, size = 10, sort = "issuedAt", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
-        return ResponseEntity.ok(couponService.getAllCoupon(authUser, pageable));
+        return ResponseEntity.ok(PageResponse.from(couponService.getAllCoupon(authUser, pageable)));
     }
 
     @Secured(UserRole.Authority.USER)
     @GetMapping("/api/v1/coupons/{couponEventId}")
-    public ResponseEntity<GetOneCouponResponse> getOneCoupon(
+    public ResponseEntity<SuccessResponse<GetOneCouponResponse>> getOneCoupon(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long couponEventId
     ) {
-        return ResponseEntity.ok(couponService.getOneCoupon(authUser, couponEventId));
+        return ResponseEntity.ok(SuccessResponse.from(couponService.getOneCoupon(authUser, couponEventId)));
     }
 
 }
