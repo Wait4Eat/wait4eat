@@ -6,7 +6,6 @@ import com.example.wait4eat.domain.waiting.dto.response.WaitingResponse;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -52,32 +51,35 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
             builder.and(waiting.status.eq(status));
         }
 
-        List<Waiting> waitings = queryFactory
-                .select(waiting)
+        // 1. 대상 Waiting ID 목록 조회 (페이징 적용)
+        List<Long> waitingIds= queryFactory
+                .select(waiting.id)
+                .distinct()
                 .from(waiting)
-                .join(waiting.store, store).fetchJoin()
                 .where(builder)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
+        if (waitingIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        // 2. 해당 ID 목록에 해당하는 Waiting 엔티티 및 연관 엔티티 조회 (IN 절 사용)
+        List<Waiting> waitings = queryFactory
+                .selectFrom(waiting)
+                .join(waiting.store, store).fetchJoin()
+                .join(waiting.user, user).fetchJoin()
+                .where(waiting.id.in(waitingIds))
+                .fetch();
+
+        // 3. 조회된 Waiting 엔티티 리스트를 WaitingResponse로 변환
         List<WaitingResponse> content = waitings.stream()
-                .map(waiting -> WaitingResponse.builder()
-                        .waitingId(waiting.getId())
-                        .storeId(waiting.getStore().getId())
-                        .userId(waiting.getUser().getId())
-                        .peopleCount(waiting.getPeopleCount())
-                        .waitingTeamCount(waiting.getStore().getWaitingTeamCount())
-                        .myWaitingOrder(waiting.getMyWaitingOrder())
-                        .status(waiting.getStatus())
-                        .createdAt(waiting.getCreatedAt())
-                        .calledAt(waiting.getCalledAt())
-                        .cancelledAt(waiting.getCancelledAt())
-                        .enteredAt(waiting.getEnteredAt())
-                        .build())
+                .map(WaitingResponse::from)
                 .collect(Collectors.toList());
 
-        Long total = Optional.ofNullable(queryFactory
+        // 4. 페이징 처리를 위한 전체 개수 쿼리
+        long total = Optional.ofNullable(queryFactory
                 .select(waiting.count())
                 .from(waiting)
                 .where(builder)
@@ -88,44 +90,15 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
     @Override
     public Optional<MyWaitingResponse> findMyWaiting(Long userId) {
-        Tuple row = queryFactory
-                .select(
-                        waiting.id,
-                        waiting.store.id,
-                        waiting.user.id,
-                        waiting.peopleCount,
-                        waiting.status,
-                        store.waitingTeamCount,
-                        waiting.myWaitingOrder,
-                        waiting.createdAt,
-                        waiting.calledAt,
-                        waiting.cancelledAt,
-                        waiting.enteredAt
-                )
-                .from(waiting)
-                .join(waiting.store, store)
+        Waiting waitingResult = queryFactory
+                .selectFrom(waiting)
+                .join(waiting.store, store).fetchJoin()
+                .join(waiting.user, user).fetchJoin()
                 .where(waiting.user.id.eq(userId), waiting.status.eq(WaitingStatus.WAITING))
                 .fetchOne();
 
-        if (row == null) {
-            return Optional.empty();
-        }
-
-        MyWaitingResponse waitingResponse = MyWaitingResponse.builder()
-                .waitingId(row.get(waiting.id))
-                .storeId(row.get(waiting.store.id))
-                .userId(row.get(waiting.user.id))
-                .peopleCount(row.get(waiting.peopleCount))
-                .waitingTeamCount(row.get(store.waitingTeamCount))
-                .myWaitingOrder(row.get(waiting.myWaitingOrder))
-                .status(row.get(waiting.status))
-                .createdAt(row.get(waiting.createdAt))
-                .calledAt(row.get(waiting.calledAt))
-                .cancelledAt(row.get(waiting.cancelledAt))
-                .enteredAt(row.get(waiting.enteredAt))
-                .build();
-
-        return Optional.of(waitingResponse);
+        return Optional.ofNullable(waitingResult)
+                .map(MyWaitingResponse::from);
     }
 
     @Override
@@ -171,5 +144,4 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
         return new PageImpl<>(content, pageable, total);
     }
-
 }
