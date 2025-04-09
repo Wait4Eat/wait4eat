@@ -16,7 +16,7 @@ public class UpdateWaitingResponse {
     private final LocalDateTime enteredAt;
 
     @Builder
-    public UpdateWaitingResponse(
+    private UpdateWaitingResponse(
             Long waitingId,
             WaitingStatus status,
             LocalDateTime calledAt,
