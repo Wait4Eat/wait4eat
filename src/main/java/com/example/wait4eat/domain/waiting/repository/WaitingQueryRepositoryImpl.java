@@ -130,10 +130,11 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
     @Override
     public Page<MyPastWaitingResponse> findMyPastWaitings(Long userId, Pageable pageable) {
-        List<Waiting> waitings = queryFactory
-                .selectFrom(waiting)
-                .join(waiting.store, store).fetchJoin()
-                .join(waiting.user, user).fetchJoin()  
+        // 1. 대상 Waiting ID 전부 조회
+        List<Long> waitingIds = queryFactory
+                .select(waiting.id)
+                .distinct()
+                .from(waiting)
                 .where(
                         waiting.user.id.eq(userId),
                         waiting.status.in(WaitingStatus.CANCELLED, WaitingStatus.COMPLETED)
@@ -142,11 +143,24 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .limit(pageable.getPageSize())
                 .fetch();
 
+        if (waitingIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        // 2. Waiting ID 목록으로 필요한 데이터 한 번에 조회 (Store, User 포함)
+        List<Waiting> waitings = queryFactory
+                .selectFrom(waiting)
+                .join(waiting.store, store).fetchJoin()
+                .join(waiting.user, user).fetchJoin()
+                .where(waiting.id.in(waitingIds))
+                .fetch();
+
         List<MyPastWaitingResponse> content = waitings.stream()
                 .map(MyPastWaitingResponse::from)
                 .collect(Collectors.toList());
 
-        Long total = Optional.ofNullable(queryFactory
+        // 3. 페이징 처리를 위한 전체 개수 쿼리
+        long total = Optional.ofNullable(queryFactory
                 .select(waiting.count())
                 .from(waiting)
                 .where(
