@@ -6,6 +6,7 @@ import com.example.wait4eat.domain.coupon_event.dto.response.GetCouponEventRespo
 import com.example.wait4eat.domain.coupon_event.service.CouponEventService;
 import com.example.wait4eat.domain.user.enums.UserRole;
 import com.example.wait4eat.global.auth.dto.AuthUser;
+import com.example.wait4eat.global.dto.response.SuccessResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,20 +22,20 @@ public class CouponEventController {
 
     @Secured(UserRole.Authority.OWNER)
     @PostMapping({"/api/v1/stores/{storeId}/couponevents"})
-    public ResponseEntity<CreateCouponEventResponse> createCouponEvent(
+    public ResponseEntity<SuccessResponse<CreateCouponEventResponse>> createCouponEvent(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long storeId,
             @Valid @RequestBody CreateCouponEventRequest request
     ) {
-        return ResponseEntity.ok(couponEventService.createCouponEvent(authUser, storeId, request));
+        return ResponseEntity.ok(SuccessResponse.from(couponEventService.createCouponEvent(authUser, storeId, request)));
     }
 
     @GetMapping("/api/v1/stores/{storeId}/couponevents/{couponEventId}")
-    public ResponseEntity<GetCouponEventResponse> getCouponEvent(
+    public ResponseEntity<SuccessResponse<GetCouponEventResponse>> getCouponEvent(
             @PathVariable Long storeId,
             @PathVariable Long couponEventId
     ) {
-        return ResponseEntity.ok(couponEventService.getCouponEvent(storeId, couponEventId));
+        return ResponseEntity.ok(SuccessResponse.from(couponEventService.getCouponEvent(storeId, couponEventId)));
     }
 
 }
