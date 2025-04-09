@@ -1,5 +1,7 @@
 package com.example.wait4eat.domain.payment.client;
 
+import com.example.wait4eat.domain.payment.entity.Payment;
+import com.example.wait4eat.domain.waiting.entity.Waiting;
 import lombok.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -22,12 +24,16 @@ public class TossPaymentClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public void confirmPayment(String paymentKey, String orderId, BigDecimal amount) {
+    public void confirmPayment(Waiting waiting, Payment payment, BigDecimal amount) {
+        String orderId = waiting.getOrderId();
+        String paymentKey = payment.getPaymentKey();
+
         String url = "https://api.tosspayments.com/v1/payments/" + paymentKey;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         String encodedKey = Base64.getEncoder().encodeToString((tossSecretKey + ":").getBytes());
         headers.set("Authorization", "Basic " + encodedKey);
+
         Map<String, Object> body = new HashMap<>();
         body.put("orderId", orderId);
         body.put("amount", amount);
@@ -36,4 +42,3 @@ public class TossPaymentClient {
         restTemplate.postForEntity(url, request, String.class);
     }
 }
-
