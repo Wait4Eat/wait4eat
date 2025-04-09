@@ -2,14 +2,15 @@ package com.example.wait4eat.domain.payment.controller;
 
 import com.example.wait4eat.domain.payment.dto.request.PreparePaymentRequest;
 import com.example.wait4eat.domain.payment.dto.request.RefundPaymentRequest;
-import com.example.wait4eat.domain.payment.dto.response.FailPaymentResponse;
 import com.example.wait4eat.domain.payment.dto.response.PreparePaymentResponse;
 import com.example.wait4eat.domain.payment.dto.response.RefundPaymentResponse;
 import com.example.wait4eat.domain.payment.dto.response.SuccessPaymentResponse;
 import com.example.wait4eat.domain.payment.service.PaymentService;
 import com.example.wait4eat.global.dto.response.SuccessResponse;
+import com.example.wait4eat.global.dto.response.ErrorResponse;
+import com.example.wait4eat.global.exception.CustomException;
+import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
@@ -43,16 +44,18 @@ public class PaymentController {
 
     @Secured("ROLE_USER")
     @GetMapping("/api/v1/payments/fail")
-    public ResponseEntity<SuccessResponse<FailPaymentResponse>> handlePaymentFail(
+    public ResponseEntity<ErrorResponse> handlePaymentFail(
             @RequestParam(required = false) String message
     ) {
         String errorMessage = (message != null && !message.isBlank())
                 ? message
-                : "결제가 실패하거나 취소되었습니다.";
+                : ExceptionType.INTERNAL_SERVER_ERROR.getMessage();
 
-        FailPaymentResponse response = new FailPaymentResponse(errorMessage);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(SuccessResponse.from(response));
+        CustomException customException = new CustomException(ExceptionType.INTERNAL_SERVER_ERROR, errorMessage);
+
+        return ResponseEntity
+                .status(customException.getHttpStatus())
+                .body(ErrorResponse.from(customException));
     }
 
     @Secured("ROLE_USER")
