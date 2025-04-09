@@ -54,7 +54,7 @@ public class WaitingResponse {
                 .storeId(waiting.getStore().getId())
                 .userId(waiting.getUser().getId())
                 .peopleCount(waiting.getPeopleCount())
-                .waitingTeamCount(waiting.getMyWaitingOrder())
+                .waitingTeamCount(waiting.getStore().getWaitingTeamCount())
                 .myWaitingOrder(waiting.getMyWaitingOrder())
                 .status(waiting.getStatus())
                 .createdAt(waiting.getCreatedAt())
