@@ -32,8 +32,8 @@ public class StoreWishlistController {
     @Secured(UserRole.Authority.USER)
     @DeleteMapping("/api/v1/storewishlists/{storeWishlistsId}")
     public ResponseEntity<SuccessResponse<DeleteStoreWishlistResponse>> deleteWishlist(@PathVariable Long storeWishlistsId, @AuthenticationPrincipal AuthUser authUser) {
-        DeleteStoreWishlistResponse response = storeWishlistService.deleteWishlist(storeWishlistsId, authUser);
-        return ResponseEntity.ok(SuccessResponse.from(response));
+        storeWishlistService.deleteWishlist(storeWishlistsId, authUser);
+        return ResponseEntity.ok(SuccessResponse.from("요청이 성공적으로 처리되었습니다."));
     }
 
     @Secured(UserRole.Authority.USER)
