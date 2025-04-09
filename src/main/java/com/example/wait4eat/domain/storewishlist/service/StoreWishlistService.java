@@ -42,18 +42,14 @@ public class StoreWishlistService {
     }
 
     @Transactional
-    public DeleteStoreWishlistResponse deleteWishlist(Long storeWishlistsId, AuthUser authUser) {
+    public void deleteWishlist(Long storeWishlistsId, AuthUser authUser) {
         User findUser = findUser(authUser);
         StoreWishlist findWishlist = storeWishlistRepository.findByIdOrElseThrow(storeWishlistsId);
 
         if (!findUser.getId().equals(findWishlist.getUserId())) {
             throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
         }
-
         storeWishlistRepository.delete(findWishlist);
-        return DeleteStoreWishlistResponse.builder()
-                .id(findWishlist.getId())
-                .build();
     }
 
     @Transactional(readOnly = true)
