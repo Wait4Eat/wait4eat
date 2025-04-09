@@ -31,7 +31,12 @@ public class CouponEventService {
     ) {
         Store store = storeRepository.findById(storeId).orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
 
-        // 쿠폰이벤트는 한 번만 생성 가능(이미 진행 중인 쿠폰 이벤트가 있으면 예외 처리, 1가게 1쿠폰이기에 storeId로 유무 검증)
+        // 본인의 가게인지 검증
+        if (!store.getUser().getId().equals(authUser.getUserId())) {
+            throw new CustomException(ExceptionType.STORE_NOT_MATCH_USER);
+        }
+
+        // 쿠폰이벤트는 한 번만 생성 가능(이미 진행 중인 쿠폰이벤트가 있으면 예외 처리, 1가게 1쿠폰이기에 storeId로 유무 검증)
         boolean existsCouponEvent = couponEventRepository.existsByStoreId(storeId);
         if (existsCouponEvent) {
             throw new CustomException(ExceptionType.COUPON_EVENT_ALREADY_EXISTS);
