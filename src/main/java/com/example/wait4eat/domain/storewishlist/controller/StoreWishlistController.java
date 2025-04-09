@@ -4,6 +4,8 @@ import com.example.wait4eat.domain.storewishlist.dto.response.StoreWishlistRespo
 import com.example.wait4eat.domain.storewishlist.service.StoreWishlistService;
 import com.example.wait4eat.domain.user.enums.UserRole;
 import com.example.wait4eat.global.auth.dto.AuthUser;
+import com.example.wait4eat.global.dto.response.PageResponse;
+import com.example.wait4eat.global.dto.response.SuccessResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,25 +25,25 @@ public class StoreWishlistController {
 
     @Secured(UserRole.Authority.USER)
     @PostMapping("/api/v1/storewishlists/{storeId}")
-    public ResponseEntity<String> createWishlist(@PathVariable Long storeId, @AuthenticationPrincipal AuthUser authUser) {
+    public ResponseEntity<SuccessResponse<Void>> createWishlist(@PathVariable Long storeId, @AuthenticationPrincipal AuthUser authUser) {
         storeWishlistService.createWishlist(storeId,authUser);
-        return ResponseEntity.ok("가게를 찜하였습니다");
+        return ResponseEntity.ok(SuccessResponse.from("가게를 찜하였습니다"));
     }
 
     @Secured(UserRole.Authority.USER)
     @DeleteMapping("/api/v1/storewishlists/{storeWishlistsId}")
-    public ResponseEntity<String> deleteWishlist(@PathVariable Long storeWishlistsId, @AuthenticationPrincipal AuthUser authUser) {
+    public ResponseEntity<SuccessResponse<Void>> deleteWishlist(@PathVariable Long storeWishlistsId, @AuthenticationPrincipal AuthUser authUser) {
         storeWishlistService.deleteWishlist(storeWishlistsId, authUser);
-        return ResponseEntity.ok("찜하기를 취소 하였습니다.");
+        return ResponseEntity.ok(SuccessResponse.from("찜하기를 취소 하였습니다."));
     }
 
     @Secured(UserRole.Authority.USER)
     @GetMapping("/api/v1/storewishlists")
-    public ResponseEntity<List<StoreWishlistResponse>> getWishlist(
+    public ResponseEntity<PageResponse<StoreWishlistResponse>> getWishlist(
             @AuthenticationPrincipal AuthUser authUser,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<StoreWishlistResponse> wishlist = storeWishlistService.getAllWishlist(authUser, pageable);
-        return ResponseEntity.ok(wishlist);
+        Page<StoreWishlistResponse> wishlist = storeWishlistService.getAllWishlist(authUser, pageable);
+        return ResponseEntity.ok(PageResponse.from(wishlist));
     }
 }
