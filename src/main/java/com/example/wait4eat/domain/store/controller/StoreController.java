@@ -7,6 +7,8 @@ import com.example.wait4eat.domain.store.dto.response.GetStoreListResponse;
 import com.example.wait4eat.domain.store.service.StoreService;
 import com.example.wait4eat.domain.user.enums.UserRole;
 import com.example.wait4eat.global.auth.dto.AuthUser;
+import com.example.wait4eat.global.dto.response.PageResponse;
+import com.example.wait4eat.global.dto.response.SuccessResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -27,26 +29,26 @@ public class StoreController {
 
     @Secured(UserRole.Authority.OWNER)
     @PostMapping("/api/v1/stores")
-    public ResponseEntity<CreateStoreResponse> create(
+    public ResponseEntity<SuccessResponse<CreateStoreResponse>> create(
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody CreateStoreRequest request
             ) {
-        return ResponseEntity.ok(storeService.create(authUser, request));
+        return ResponseEntity.ok(SuccessResponse.from(storeService.create(authUser, request)));
     }
 
     @GetMapping("/api/v1/stores")
-    public ResponseEntity<List<GetStoreListResponse>> getStoreList(
+    public ResponseEntity<PageResponse<GetStoreListResponse>> getStoreList(
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
-        return ResponseEntity.ok(storeService.getStoreList(pageable));
+        return ResponseEntity.ok(PageResponse.from(storeService.getStoreList(pageable)));
     }
 
     @GetMapping("/api/v1/stores/{storeId}")
-    public ResponseEntity<GetStoreDetailResponse> getStoreDetail(
+    public ResponseEntity<SuccessResponse<GetStoreDetailResponse>> getStoreDetail(
             @PathVariable Long storeId
     ) {
-        return ResponseEntity.ok(storeService.getStoreDetail(storeId));
+        return ResponseEntity.ok(SuccessResponse.from(storeService.getStoreDetail(storeId)));
     }
 
 }
