@@ -117,7 +117,7 @@ public class WaitingService {
         waiting.cancel(getCurrentTime());
         reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
 
-        return CancelWaitingResponse.from(waiting);
+        return CancelWaitingResponse.from("웨이팅이 성공적으로 취소되었습니다.");
     }
 
     @Transactional
