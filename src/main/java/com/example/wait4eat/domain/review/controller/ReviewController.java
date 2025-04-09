@@ -23,9 +23,9 @@ public class ReviewController {
 
     @Secured(UserRole.Authority.USER)
     @PostMapping("/api/v1/stores/reviews")
-    public ResponseEntity<ReviewResponse> createReview(@Valid @RequestBody CreateReviewRequest request) {
+    public ResponseEntity<SuccessResponse<ReviewResponse>> createReview(@Valid @RequestBody CreateReviewRequest request) {
         ReviewResponse response = reviewService.createReview(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(SuccessResponse.from(response));
     }
 
     @GetMapping("/api/v1/stores/{storeId}/reviews")
