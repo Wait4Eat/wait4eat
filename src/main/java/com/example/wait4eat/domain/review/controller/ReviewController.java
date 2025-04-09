@@ -4,6 +4,7 @@ import com.example.wait4eat.domain.review.dto.request.CreateReviewRequest;
 import com.example.wait4eat.domain.review.dto.response.ReviewResponse;
 import com.example.wait4eat.domain.review.service.ReviewService;
 import com.example.wait4eat.domain.user.enums.UserRole;
+import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.dto.response.PageResponse;
 import com.example.wait4eat.global.dto.response.SuccessResponse;
 import jakarta.validation.Valid;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -35,5 +37,15 @@ public class ReviewController {
             ) {
         Page<ReviewResponse> reviewPage = reviewService.getAllReview(storeId, pageable);
         return ResponseEntity.ok(PageResponse.from(reviewPage));
+    }
+
+    @Secured(UserRole.Authority.USER)
+    @GetMapping("/api/v1/user/reviews")
+    public ResponseEntity<PageResponse<ReviewResponse>> getAllMyReview(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PageableDefault(page = 0, size = 10, sort = "modifiedAt", direction = Sort.Direction.DESC) Pageable pageable
+            ) {
+        Page<ReviewResponse> response = reviewService.getAllMyReview(authUser, pageable);
+        return ResponseEntity.ok(PageResponse.from(response));
     }
 }
