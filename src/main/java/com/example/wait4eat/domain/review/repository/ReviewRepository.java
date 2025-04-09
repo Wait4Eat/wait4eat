@@ -12,4 +12,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @Query("SELECT r FROM Review r JOIN r.waiting w WHERE w.store.id = :storeId")
     Page<Review> getAllByStoreId(Long storeId, Pageable pageable);
+
+    @Query("SELECT r FROM Review r JOIN r.waiting w WHERE w.user.id = :userId")
+    Page<Review> getAllByUserId(Long userId, Pageable pageable);
 }
