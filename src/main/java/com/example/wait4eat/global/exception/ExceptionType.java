@@ -32,9 +32,12 @@ public enum ExceptionType {
     // Store
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 가게를 찾을 수 없습니다."),
     STORE_ALREADY_EXISTS(HttpStatus.CONFLICT, "사장님은 하나의 가게만 등록할 수 있습니다."),
+    STORE_NOT_MATCH_USER(HttpStatus.BAD_REQUEST,  "해당 유저의 가게가 아닙니다."),
 
     // Coupon
     COUPON_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 쿠폰을 찾을 수 없습니다."),
+    COUPON_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,  "이미 발급받은 쿠폰입니다."),
+    COUPON_SOLD_OUT(HttpStatus.BAD_REQUEST,  "선착순 쿠폰이 소진되었습니다."),
 
     // Coupon Event
     COUPON_EVENT_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 쿠폰 이벤트를 찾을 수 없습니다."),
@@ -43,6 +46,19 @@ public enum ExceptionType {
 
     // Waiting
     WAITING_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 웨이팅을 찾을 수 없습니다."),
+    NO_CURRENT_WAITING(HttpStatus.NOT_FOUND, "현재 대기 중인 웨이팅이 없습니다."),
+    INVALID_WAITING_STATUS_UPDATE(HttpStatus.BAD_REQUEST, "유효하지 않은 웨이팅 상태 변경입니다."),
+    UNAUTHORIZED_CANCEL_WAITING(HttpStatus.FORBIDDEN, "웨이팅 취소 권한이 없습니다."),
+    ALREADY_FINISHED_WAITING(HttpStatus.BAD_REQUEST, "이미 완료 또는 취소된 웨이팅입니다."),
+    SINGLE_WAIT_ALLOWED(HttpStatus.BAD_REQUEST, "한 번에 하나의 웨이팅만 허용됩니다."),
+    NO_PERMISSION_TO_ACCESS_STORE_WAITING(HttpStatus.FORBIDDEN, "해당 가게 웨이팅 조회 권한이 없습니다"),
+
+    // StoreWishlist
+    STORE_WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 위시리스트를 찾을 수 없습니다."),
+    ALREADY_WISHLIST_EXISTS(HttpStatus.CONFLICT, "이미 찜한 가게입니다."),
+
+    // Review
+    ALREADY_REVIEW_EXISTS(HttpStatus.CONFLICT, "이미 리뷰를 작성하였습니다."),
 
     // Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 문제가 발생했습니다.");

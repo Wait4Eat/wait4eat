@@ -63,4 +63,7 @@ public class CouponEvent {
         this.createdAt = createdAt;
     }
 
+    public void increaseIssuedQuantity() {
+        this.issuedQuantity += 1;
+    }
 }
