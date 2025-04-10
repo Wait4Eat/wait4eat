@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.payment.service;
 
+import com.example.wait4eat.domain.coupon.repository.CouponRepository;
 import com.example.wait4eat.domain.payment.client.TossPaymentClient;
 import com.example.wait4eat.domain.payment.dto.request.PreparePaymentRequest;
 import com.example.wait4eat.domain.payment.dto.request.RefundPaymentRequest;
@@ -18,7 +19,7 @@ import java.math.BigDecimal;
 public class PaymentServiceImpl implements PaymentService {
 
     private final TossPaymentClient tossPaymentClient;
-    private final WaitingRepository waitingRepository; // TODO: 구현 필요
+    private final WaitingRepository waitingRepository; // TODO: 구현
 
     @Override
     public PreparePaymentResponse preparePayment(PreparePaymentRequest request) {
@@ -51,7 +52,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public SuccessPaymentResponse handleSuccess(String paymentKey, String orderId, BigDecimal amount) {
-        tossPaymentClient.confirmPayment(paymentKey, orderId, amount);
 
         // TODO: orderId로 waiting 조회, payment 저장 등 실제 로직 구현
         return SuccessPaymentResponse.builder()
