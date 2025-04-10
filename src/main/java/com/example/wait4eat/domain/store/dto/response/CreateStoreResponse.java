@@ -18,7 +18,6 @@ public class CreateStoreResponse {
     private final LocalTime openTime;
     private final LocalTime closeTime;
     private final String description;
-    private final String imageUrl;
     private final int depositAmount;
     private final LocalDateTime createdAt;
 
@@ -31,7 +30,6 @@ public class CreateStoreResponse {
             LocalTime openTime,
             LocalTime closeTime,
             String description,
-            String imageUrl,
             int depositAmount,
             LocalDateTime createdAt
     ) {
@@ -42,7 +40,6 @@ public class CreateStoreResponse {
         this.openTime = openTime;
         this.closeTime = closeTime;
         this.description = description;
-        this.imageUrl = imageUrl;
         this.depositAmount = depositAmount;
         this.createdAt = createdAt;
     }
@@ -56,7 +53,6 @@ public class CreateStoreResponse {
                 .openTime(store.getOpenTime())
                 .closeTime(store.getCloseTime())
                 .description(store.getDescription())
-                .imageUrl(store.getImageUrl())
                 .depositAmount(store.getDepositAmount())
                 .createdAt(store.getCreatedAt())
                 .build();

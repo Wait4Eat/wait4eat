@@ -14,7 +14,6 @@ public class GetStoreListResponse {
     private final String address;
     private final LocalTime openTime;
     private final LocalTime closeTime;
-    private final String imageUrl;
     private final int depositAmount;
     private final int waitingTeamCount;
 
@@ -25,7 +24,6 @@ public class GetStoreListResponse {
             String address,
             LocalTime openTime,
             LocalTime closeTime,
-            String imageUrl,
             int depositAmount,
             int waitingTeamCount
     ) {
@@ -34,7 +32,6 @@ public class GetStoreListResponse {
         this.address = address;
         this.openTime = openTime;
         this.closeTime = closeTime;
-        this.imageUrl = imageUrl;
         this.depositAmount = depositAmount;
         this.waitingTeamCount = waitingTeamCount;
     }
@@ -46,7 +43,6 @@ public class GetStoreListResponse {
                 .address(store.getAddress())
                 .openTime(store.getOpenTime())
                 .closeTime(store.getCloseTime())
-                .imageUrl(store.getImageUrl())
                 .depositAmount(store.getDepositAmount())
                 .waitingTeamCount(store.getWaitingTeamCount())
                 .build();
