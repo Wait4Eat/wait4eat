@@ -1,6 +1,5 @@
 package com.example.wait4eat.domain.waiting.entity;
 
-
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
@@ -26,14 +25,20 @@ public class Waiting{
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "store_id")
+    @JoinColumn(name = "store_id", nullable = false)
     private Store store;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(unique = true) // 주문 ID는 유일해야 함
+    private String orderId;
+
+    @Column(nullable = false)
     private int peopleCount;
+
+    private int myWaitingOrder; // 내 웨이팅 순서
 
     @Enumerated(EnumType.STRING)
     private WaitingStatus status;
@@ -48,10 +53,42 @@ public class Waiting{
     private LocalDateTime enteredAt;
 
     @Builder
-    public Waiting(Store store, User user, int peopleCount, WaitingStatus status) {
+    public Waiting(Store store, User user, String orderId, int peopleCount, int myWaitingOrder, WaitingStatus status) {
         this.store = store;
         this.user = user;
+        this.orderId = orderId;
         this.peopleCount = peopleCount;
+        this.myWaitingOrder = myWaitingOrder;
         this.status = status;
     }
+
+    public void cancel(LocalDateTime cancelledAt) {
+        if (this.status != WaitingStatus.CANCELLED) {
+            this.status = WaitingStatus.CANCELLED;
+            this.cancelledAt = cancelledAt;
+        }
+    }
+
+    public void call(LocalDateTime calledAt) {
+        if (this.status != WaitingStatus.CALLED) {
+            this.status = WaitingStatus.CALLED;
+            this.calledAt = calledAt;
+        }
+    }
+
+    public void enter(LocalDateTime enteredAt) {
+        if (this.status != WaitingStatus.COMPLETED) {
+            this.status = WaitingStatus.COMPLETED;
+            this.enteredAt = enteredAt;
+        }
+    }
+
+    public void markAsCalled() {
+        this.myWaitingOrder = 0;
+    }
+
+    public void updateMyWaitingOrder(int newOrder) {
+        this.myWaitingOrder = newOrder;
+    }
+
 }
