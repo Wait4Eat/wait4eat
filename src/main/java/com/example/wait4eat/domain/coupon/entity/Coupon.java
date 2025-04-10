@@ -25,20 +25,25 @@ public class Coupon {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "coupon_event_id")
+    @JoinColumn(name = "coupon_event_id", nullable = false)
     private CouponEvent couponEvent;
 
+    @Column(nullable = false)
     private BigDecimal discountAmount;
 
     @Column(nullable = false)
-    private Boolean isUsed;
+    private LocalDateTime expiresAt;
 
     @CreatedDate
+    @Column(nullable = false)
     private LocalDateTime issuedAt;
+
+    @Column(nullable = false)
+    private Boolean isUsed;
 
     private LocalDateTime usedAt;
 
@@ -46,11 +51,18 @@ public class Coupon {
     public Coupon(
             User user,
             CouponEvent couponEvent,
-            BigDecimal discountAmount
+            BigDecimal discountAmount,
+            LocalDateTime expiresAt,
+            LocalDateTime issuedAt,
+            Boolean isUsed,
+            LocalDateTime usedAt
     ) {
         this.user = user;
         this.couponEvent = couponEvent;
         this.discountAmount = discountAmount;
+        this.expiresAt = expiresAt;
+        this.issuedAt = issuedAt;
         this.isUsed = false;
+        this.usedAt = usedAt;
     }
 }
