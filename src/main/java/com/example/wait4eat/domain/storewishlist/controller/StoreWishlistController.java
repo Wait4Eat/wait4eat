@@ -37,7 +37,7 @@ public class StoreWishlistController {
 
     @Secured(UserRole.Authority.USER)
     @GetMapping("/api/v1/storewishlists")
-    public ResponseEntity<PageResponse<StoreWishlistResponse>> getWishlist(
+    public ResponseEntity<PageResponse<StoreWishlistResponse>> getWishlists(
             @AuthenticationPrincipal AuthUser authUser,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
