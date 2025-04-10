@@ -18,7 +18,6 @@ public class GetStoreDetailResponse {
     private final LocalTime openTime;
     private final LocalTime closeTime;
     private final String description;
-    private final String imageUrl;
     private final int depositAmount;
     private final int waitingTeamCount;
     private final LocalDateTime createdAt;
@@ -32,7 +31,6 @@ public class GetStoreDetailResponse {
             LocalTime openTime,
             LocalTime closeTime,
             String description,
-            String imageUrl,
             int depositAmount,
             int waitingTeamCount,
             LocalDateTime createdAt
@@ -44,7 +42,6 @@ public class GetStoreDetailResponse {
         this.openTime = openTime;
         this.closeTime = closeTime;
         this.description = description;
-        this.imageUrl = imageUrl;
         this.depositAmount = depositAmount;
         this.waitingTeamCount = waitingTeamCount;
         this.createdAt = createdAt;
@@ -59,7 +56,6 @@ public class GetStoreDetailResponse {
                 .openTime(store.getOpenTime())
                 .closeTime(store.getCloseTime())
                 .description(store.getDescription())
-                .imageUrl(store.getImageUrl())
                 .depositAmount(store.getDepositAmount())
                 .waitingTeamCount(store.getWaitingTeamCount())
                 .createdAt(store.getCreatedAt())
