@@ -2,7 +2,6 @@ package com.example.wait4eat.domain.store.entity;
 
 import com.example.wait4eat.domain.user.entity.User;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Null;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -43,8 +42,6 @@ public class Store {
 
     private String description;
 
-    private String imageUrl;
-
     @Column(nullable = false)
     private int depositAmount;
 
@@ -65,7 +62,6 @@ public class Store {
             LocalTime openTime,
             LocalTime closeTime,
             String description,
-            String imageUrl,
             int depositAmount,
             int waitingTeamCount
     ) {
@@ -75,7 +71,6 @@ public class Store {
         this.openTime = openTime;
         this.closeTime = closeTime;
         this.description = description;
-        this.imageUrl = imageUrl;
         this.depositAmount = depositAmount;
         this.waitingTeamCount = waitingTeamCount;
     }
