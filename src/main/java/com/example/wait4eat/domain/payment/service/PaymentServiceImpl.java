@@ -51,7 +51,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public SuccessPaymentResponse handleSuccess(String paymentKey, String orderId, BigDecimal amount) {
-        tossPaymentClient.confirmPayment(paymentKey, orderId, amount);
 
         // TODO: orderId로 waiting 조회, payment 저장 등 실제 로직 구현
         return SuccessPaymentResponse.builder()

@@ -24,9 +24,7 @@ public class TossPaymentClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public void confirmPayment(Waiting waiting, Payment payment, BigDecimal amount) {
-        String orderId = waiting.getOrderId();
-        String paymentKey = payment.getPaymentKey();
+    public void confirmPayment(String paymentKey, String orderId, BigDecimal amount) {
 
         String url = "https://api.tosspayments.com/v1/payments/" + paymentKey;
         HttpHeaders headers = new HttpHeaders();
