@@ -6,6 +6,7 @@ import com.example.wait4eat.domain.payment.dto.request.RefundPaymentRequest;
 import com.example.wait4eat.domain.payment.dto.response.PreparePaymentResponse;
 import com.example.wait4eat.domain.payment.dto.response.RefundPaymentResponse;
 import com.example.wait4eat.domain.payment.dto.response.SuccessPaymentResponse;
+import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import lombok.*;
 import org.springframework.stereotype.Service;
