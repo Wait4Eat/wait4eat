@@ -31,8 +31,14 @@ public enum ExceptionType {
 
     // Store
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 가게를 찾을 수 없습니다."),
+    NOT_OWNER_OF_STORE(HttpStatus.FORBIDDEN, "해당 가게 사장님만 가능한 작업입니다."),
     STORE_NOT_MATCH_USER(HttpStatus.BAD_REQUEST,  "해당 유저의 가게가 아닙니다."),
     STORE_ALREADY_EXISTS(HttpStatus.CONFLICT, "사장님은 하나의 가게만 등록할 수 있습니다."),
+
+    // Store Image
+    STORE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가게 이미지를 찾을 수 없습니다."),
+    STORE_IMAGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "가게당 최대 5개의 이미지만 업로드할 수 있습니다."),
+    STORE_IMAGE_NOT_BELONGS_TO_STORE(HttpStatus.BAD_REQUEST, "해당 가게의 이미지가 아닙니다."),
 
     // Coupon
     COUPON_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 쿠폰을 찾을 수 없습니다."),
@@ -61,6 +67,11 @@ public enum ExceptionType {
     WAITING_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "아직 웨이팅이 완료되지 않았습니다."),
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 리뷰를 찾을 수 없습니다."),
     ALREADY_REVIEW_EXISTS(HttpStatus.CONFLICT, "이미 리뷰를 작성하였습니다."),
+
+    // File
+    FILE_LIST_EMPTY(HttpStatus.BAD_REQUEST, "업로드할 파일을 1개 이상 첨부해주세요."),
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
+    FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다."),
 
     // Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 문제가 발생했습니다.");
