@@ -57,6 +57,7 @@ public enum ExceptionType {
     ALREADY_WISHLIST_EXISTS(HttpStatus.CONFLICT, "이미 찜한 가게입니다."),
 
     // Review
+    WAITING_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "아직 웨이팅이 완료되지 않았습니다."),
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 리뷰를 찾을 수 없습니다."),
     ALREADY_REVIEW_EXISTS(HttpStatus.CONFLICT, "이미 리뷰를 작성하였습니다."),
 
