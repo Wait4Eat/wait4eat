@@ -28,6 +28,7 @@ public class Notification {
     private User user;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private NotificationType type;
 
     private String text;

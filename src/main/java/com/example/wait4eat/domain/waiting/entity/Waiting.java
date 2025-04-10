@@ -90,5 +90,4 @@ public class Waiting{
     public void updateMyWaitingOrder(int newOrder) {
         this.myWaitingOrder = newOrder;
     }
-
 }
