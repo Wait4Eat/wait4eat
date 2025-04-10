@@ -30,13 +30,13 @@ public class StoreWishlistService {
         StoreWishlist storeWishlist = StoreWishlist.builder().user(findUser).store(findStore).build();
 
         if (storeWishlistRepository.existsByUserAndStore(findUser, findStore)) {
-            throw new CustomException(ExceptionType.ALREADY_WISHLIST_STORE);
+            throw new CustomException(ExceptionType.ALREADY_WISHLIST_EXISTS);
         }
 
         try {
             return StoreWishlistResponse.from(storeWishlistRepository.save(storeWishlist));
         } catch (CustomException ex) {
-            throw new CustomException(ExceptionType.ALREADY_WISHLIST_STORE);
+            throw new CustomException(ExceptionType.ALREADY_WISHLIST_EXISTS);
         }
     }
 
