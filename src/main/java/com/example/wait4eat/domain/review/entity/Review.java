@@ -28,10 +28,10 @@ public class Review {
     @JoinColumn(name = "waiting_id", nullable = false)
     private Waiting waiting;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(nullable = false)
     private double rating;
 
     @CreatedDate
