@@ -109,15 +109,15 @@ public class WaitingService {
         }
 
         // 가게의 웨이팅 팀 수 감소
+        // 취소한 사용자의 웨이팅 순서 유지
         Store store = waiting.getStore();
         store.decrementWaitingTeamCount();
 
-        // 취소한 사용자의 웨이팅 순서 유지
         // 웨이팅 상태만 변경하고 취소 시간 기록
         waiting.cancel(getCurrentTime());
         reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
 
-        return CancelWaitingResponse.from("웨이팅이 성공적으로 취소되었습니다.");
+        return CancelWaitingResponse.from(waiting);
     }
 
     @Transactional
