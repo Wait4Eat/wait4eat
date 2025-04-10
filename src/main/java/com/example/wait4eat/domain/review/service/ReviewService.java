@@ -10,6 +10,7 @@ import com.example.wait4eat.domain.store.repository.StoreRepository;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
+import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.exception.CustomException;
@@ -35,6 +36,10 @@ public class ReviewService {
 
         if (reviewRepository.existsByWaiting(findWaiting)) {
             throw new CustomException(ExceptionType.ALREADY_REVIEW_EXISTS);
+        }
+
+        if (findWaiting.getStatus() != WaitingStatus.COMPLETED) {
+            throw new CustomException(ExceptionType.WAITING_NOT_COMPLETED);
         }
 
         Review savedReview = reviewRepository.save(Review.builder()
