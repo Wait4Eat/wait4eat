@@ -17,8 +17,6 @@ import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 public class CouponController {
@@ -46,11 +44,11 @@ public class CouponController {
 
     @Secured(UserRole.Authority.USER)
     @GetMapping("/api/v1/coupons/{couponEventId}")
-    public ResponseEntity<SuccessResponse<GetOneCouponResponse>> getOneCoupon(
+    public ResponseEntity<SuccessResponse<GetOneCouponResponse>> getCouponByCouponEvent(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long couponEventId
     ) {
-        return ResponseEntity.ok(SuccessResponse.from(couponService.getOneCoupon(authUser, couponEventId)));
+        return ResponseEntity.ok(SuccessResponse.from(couponService.getCouponByCouponEvent(authUser, couponEventId)));
     }
 
 }
