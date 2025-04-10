@@ -43,7 +43,7 @@ public class CouponService {
         }
 
         // 쿠폰 남은 수량 검증(totalQuantity를 넘지 않게 쿠폰 발행)
-        if (couponEvent.getIssuedQuantity() == couponEvent.getTotalQuantity()) {
+        if (couponEvent.getIssuedQuantity() >= couponEvent.getTotalQuantity()) {
             throw new CustomException(ExceptionType.COUPON_SOLD_OUT);
         }
 
@@ -78,16 +78,16 @@ public class CouponService {
     }
 
     @Transactional(readOnly = true)
-    public GetOneCouponResponse getOneCoupon(AuthUser authUser, Long couponEventId) {
+    public GetOneCouponResponse getCouponByCouponEvent(AuthUser authUser, Long couponEventId) {
 
         User user = getUserByAuthUser(authUser);
-
-        Coupon coupon = couponRepository.findByUserIdAndCouponEventId(user.getId(), couponEventId);
 
         // 조회 요청한 쿠폰이벤트가 있는지 검증
         if (!couponEventRepository.existsById(couponEventId)) {
             throw new CustomException(ExceptionType.COUPON_EVENT_NOT_FOUND);
         }
+
+        Coupon coupon = couponRepository.findByUserIdAndCouponEventId(user.getId(), couponEventId);
 
         // 발급받지 않은 쿠폰 검증
         if (coupon == null) {
