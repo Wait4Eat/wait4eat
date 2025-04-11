@@ -1,5 +1,7 @@
 package com.example.wait4eat.domain.review.dto.request;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -14,5 +16,6 @@ public class UpdateReviewRequest {
     private String content;
 
     @NotNull(message = "점수 입력은 필수입니다.")
+    @Max(5) @Min(1)
     private double rating;
 }
