@@ -78,7 +78,7 @@ public class ReviewService {
             throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
         }
 
-        findReview.update(request);
+        findReview.update(request.getContent(), request.getRating());
         Review updatedReview = reviewRepository.save(findReview);
         return ReviewResponse.from(updatedReview);
     }

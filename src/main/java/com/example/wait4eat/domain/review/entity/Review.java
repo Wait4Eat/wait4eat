@@ -57,8 +57,8 @@ public class Review {
         return (waiting != null) ? waiting.getStore().getId() : null;
     }
 
-    public void update(UpdateReviewRequest request) {
-        this.content = request.getContent();
-        this.rating = request.getRating();
+    public void update(String content, double rating) {
+        this.content = content;
+        this.rating = rating;
     }
 }
