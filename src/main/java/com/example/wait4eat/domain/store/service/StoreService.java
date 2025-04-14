@@ -1,6 +1,7 @@
 package com.example.wait4eat.domain.store.service;
 
 import com.example.wait4eat.domain.store.dto.request.CreateStoreRequest;
+import com.example.wait4eat.domain.store.dto.request.SearchStoreRequest;
 import com.example.wait4eat.domain.store.dto.response.CreateStoreResponse;
 import com.example.wait4eat.domain.store.dto.response.GetStoreDetailResponse;
 import com.example.wait4eat.domain.store.dto.response.GetStoreListResponse;
@@ -14,7 +15,9 @@ import com.example.wait4eat.global.exception.ExceptionType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,8 +57,28 @@ public class StoreService {
     }
 
     @Transactional(readOnly = true)
-    public Page<GetStoreListResponse> getStoreList(Pageable pageable) {
-        return storeRepository.findAll(pageable)
+    public Page<GetStoreListResponse> getStoreList(SearchStoreRequest request) {
+        System.out.println("SearchStoreRequest: name=" + request.getName() +
+                ", address=" + request.getAddress() +
+                ", page=" + request.getPage() +
+                ", size=" + request.getSize());
+
+        // 정렬 설정
+        Sort sort = Sort.by(
+                request.getSortDirection().equalsIgnoreCase("asc") ?
+                        Sort.Order.asc(request.getSort()) :
+                        Sort.Order.desc(request.getSort())
+        );
+
+        // 페이징 설정
+        Pageable pageable = PageRequest.of(
+                request.getPage(),
+                request.getSize(),
+                sort
+        );
+
+        // 검색 및 필터링 조건 적용
+        return storeRepository.searchStores(request, pageable)
                 .map(GetStoreListResponse::from);
     }
 

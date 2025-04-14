@@ -1,6 +1,7 @@
 package com.example.wait4eat.domain.store.controller;
 
 import com.example.wait4eat.domain.store.dto.request.CreateStoreRequest;
+import com.example.wait4eat.domain.store.dto.request.SearchStoreRequest;
 import com.example.wait4eat.domain.store.dto.response.CreateStoreResponse;
 import com.example.wait4eat.domain.store.dto.response.GetStoreDetailResponse;
 import com.example.wait4eat.domain.store.dto.response.GetStoreListResponse;
@@ -38,10 +39,9 @@ public class StoreController {
 
     @GetMapping("/api/v1/stores")
     public ResponseEntity<PageResponse<GetStoreListResponse>> getStoreList(
-            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
-            Pageable pageable
-    ) {
-        return ResponseEntity.ok(PageResponse.from(storeService.getStoreList(pageable)));
+            @ModelAttribute SearchStoreRequest request
+            ) {
+        return ResponseEntity.ok(PageResponse.from(storeService.getStoreList(request)));
     }
 
     @GetMapping("/api/v1/stores/{storeId}")
@@ -51,4 +51,8 @@ public class StoreController {
         return ResponseEntity.ok(SuccessResponse.from(storeService.getStoreDetail(storeId)));
     }
 
+    @GetMapping("/api/v1/stores/debug")
+    public SearchStoreRequest debug(@ModelAttribute SearchStoreRequest request) {
+        return request;
+    }
 }
