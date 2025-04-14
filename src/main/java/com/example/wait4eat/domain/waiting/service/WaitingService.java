@@ -82,7 +82,7 @@ public class WaitingService {
     @Transactional(readOnly = true)
     public MyWaitingResponse getMyWaiting(Long userId) {
         return waitingRepository.findMyWaiting(userId)
-                .orElseThrow(() -> new CustomException(ExceptionType.NO_CURRENT_WAITING));
+                .orElse(null);
     }
 
     @Transactional(readOnly = true)

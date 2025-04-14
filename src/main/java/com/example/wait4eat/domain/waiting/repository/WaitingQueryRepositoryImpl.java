@@ -94,7 +94,8 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .selectFrom(waiting)
                 .join(waiting.store, store).fetchJoin()
                 .join(waiting.user, user).fetchJoin()
-                .where(waiting.user.id.eq(userId), waiting.status.eq(WaitingStatus.WAITING))
+                .where(waiting.user.id.eq(userId)
+                        .and(waiting.status.in(WaitingStatus.REQUESTED, WaitingStatus.WAITING, WaitingStatus.CALLED)))
                 .fetchOne();
 
         return Optional.ofNullable(waitingResult)
