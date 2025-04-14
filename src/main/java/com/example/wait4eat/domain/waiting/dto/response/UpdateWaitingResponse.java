@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class UpdateWaitingResponse {
     private final Long waitingId;
     private final WaitingStatus status;
+    private final LocalDateTime createdAt;
     private final LocalDateTime calledAt;
     private final LocalDateTime cancelledAt;
     private final LocalDateTime enteredAt;
@@ -19,12 +20,14 @@ public class UpdateWaitingResponse {
     private UpdateWaitingResponse(
             Long waitingId,
             WaitingStatus status,
+            LocalDateTime createdAt,
             LocalDateTime calledAt,
             LocalDateTime cancelledAt,
             LocalDateTime enteredAt
     ) {
         this.waitingId = waitingId;
         this.status = status;
+        this.createdAt = createdAt;
         this.calledAt = calledAt;
         this.cancelledAt = cancelledAt;
         this.enteredAt = enteredAt;
@@ -34,6 +37,7 @@ public class UpdateWaitingResponse {
         return UpdateWaitingResponse.builder()
                 .waitingId(waiting.getId())
                 .status(waiting.getStatus())
+                .createdAt(waiting.getCreatedAt())
                 .calledAt(waiting.getCalledAt())
                 .cancelledAt(waiting.getCancelledAt())
                 .enteredAt(waiting.getEnteredAt())
