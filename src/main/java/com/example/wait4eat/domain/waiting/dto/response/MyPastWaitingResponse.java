@@ -15,6 +15,7 @@ public class MyPastWaitingResponse {
     private final int peopleCount;
     private final WaitingStatus status;
     private final LocalDateTime createdAt;
+    private final LocalDateTime activatedAt;
     private final LocalDateTime calledAt;
     private final LocalDateTime cancelledAt;
     private final LocalDateTime enteredAt;
@@ -27,6 +28,7 @@ public class MyPastWaitingResponse {
             int peopleCount,
             WaitingStatus status,
             LocalDateTime createdAt,
+            LocalDateTime activatedAt,
             LocalDateTime calledAt,
             LocalDateTime cancelledAt,
             LocalDateTime enteredAt
@@ -37,6 +39,7 @@ public class MyPastWaitingResponse {
         this.peopleCount = peopleCount;
         this.status = status;
         this.createdAt = createdAt;
+        this.activatedAt = activatedAt;
         this.calledAt = calledAt;
         this.cancelledAt = cancelledAt;
         this.enteredAt = enteredAt;
@@ -50,6 +53,7 @@ public class MyPastWaitingResponse {
                 .peopleCount(waiting.getPeopleCount())
                 .status(waiting.getStatus())
                 .createdAt(waiting.getCreatedAt())
+                .activatedAt(waiting.getActivatedAt())
                 .calledAt(waiting.getCalledAt())
                 .cancelledAt(waiting.getCancelledAt())
                 .enteredAt(waiting.getEnteredAt())
