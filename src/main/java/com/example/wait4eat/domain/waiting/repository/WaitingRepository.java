@@ -10,8 +10,7 @@ import java.util.Optional;
 public interface WaitingRepository extends JpaRepository<Waiting, Long>, WaitingQueryRepository {
     Optional<Waiting> findByOrderId(String orderId);
     int countByStoreIdAndStatus(Long storeId, WaitingStatus status);
-    Optional<Waiting> findByUserIdAndStatus(Long userId, WaitingStatus status);
+    Optional<Waiting> findByUserIdAndStatusIn(Long userId, List<WaitingStatus> status);
     List<Waiting> findByStoreIdAndStatusOrderByCreatedAtAsc(Long storeId, WaitingStatus status);
-
 
 }
