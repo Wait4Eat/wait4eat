@@ -58,14 +58,10 @@ public class WaitingService {
                 .orderId(orderId) // 주문 ID 저장 (UUID)
                 .peopleCount(request.getPeopleCount())
                 .myWaitingOrder(myWaitingOrder) // DB에 저장되는 순번
-                .status(WaitingStatus.WAITING)
+                .status(WaitingStatus.REQUESTED)
                 .build();
 
         Waiting savedWaiting = waitingRepository.save(waiting);
-
-        // 스토어의 전체 웨이팅 팀 수 증가 및 저장
-        store.incrementWaitingTeamCount();
-        storeRepository.save(store);
 
         return CreateWaitingResponse.from(savedWaiting);
     }
@@ -149,6 +145,12 @@ public class WaitingService {
             canAdvance = true;
         }
 
+        // 웨이팅 접수 -> 웨이팅 목록 추가
+        if (newStatus == WaitingStatus.WAITING && currentStatus == WaitingStatus.REQUESTED && canAdvance) {
+            handleWaiting(waiting);
+            updated = true;
+        }
+
         // 사장님 웨이팅 팀 호출
         if (newStatus == WaitingStatus.CALLED && currentStatus == WaitingStatus.WAITING && canAdvance) {
             handleCalled(waiting);
@@ -174,6 +176,13 @@ public class WaitingService {
         }
 
         return UpdateWaitingResponse.from(waiting);
+    }
+
+    private void handleWaiting(Waiting waiting) {
+        waiting.waiting(getCurrentTime());
+        Store store = waiting.getStore();
+        store.incrementWaitingTeamCount(); // 가게 웨이팅 팀 수 증가
+        reorderWaitingQueue(store.getId()); // 전체 재정렬 호출
     }
 
     private void handleCalled(Waiting waiting) {
