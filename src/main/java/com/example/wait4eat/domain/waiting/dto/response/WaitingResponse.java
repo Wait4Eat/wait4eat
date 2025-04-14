@@ -17,6 +17,7 @@ public class WaitingResponse {
     private final int myWaitingOrder;
     private final WaitingStatus status;
     private final LocalDateTime createdAt;
+    private final LocalDateTime activatedAt;
     private final LocalDateTime calledAt;
     private final LocalDateTime cancelledAt;
     private final LocalDateTime enteredAt;
@@ -31,6 +32,7 @@ public class WaitingResponse {
             int myWaitingOrder,
             WaitingStatus status,
             LocalDateTime createdAt,
+            LocalDateTime activatedAt,
             LocalDateTime calledAt,
             LocalDateTime cancelledAt,
             LocalDateTime enteredAt
@@ -43,6 +45,7 @@ public class WaitingResponse {
         this.myWaitingOrder = myWaitingOrder;
         this.status = status;
         this.createdAt = createdAt;
+        this.activatedAt = activatedAt;
         this.calledAt = calledAt;
         this.cancelledAt = cancelledAt;
         this.enteredAt = enteredAt;
@@ -58,6 +61,7 @@ public class WaitingResponse {
                 .myWaitingOrder(waiting.getMyWaitingOrder())
                 .status(waiting.getStatus())
                 .createdAt(waiting.getCreatedAt())
+                .activatedAt(waiting.getActivatedAt())
                 .calledAt(waiting.getCalledAt())
                 .cancelledAt(waiting.getCancelledAt())
                 .enteredAt(waiting.getEnteredAt())

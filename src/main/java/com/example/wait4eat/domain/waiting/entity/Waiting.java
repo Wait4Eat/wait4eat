@@ -46,6 +46,8 @@ public class Waiting{
     @CreatedDate
     private LocalDateTime createdAt;
 
+    private LocalDateTime activatedAt;
+
     private LocalDateTime calledAt;
 
     private LocalDateTime cancelledAt;
@@ -62,10 +64,10 @@ public class Waiting{
         this.status = status;
     }
 
-    public void waiting(LocalDateTime createdAt) {
+    public void waiting(LocalDateTime activatedAt) {
         if (this.status != WaitingStatus.WAITING) {
             this.status = WaitingStatus.WAITING;
-            this.createdAt = createdAt;
+            this.activatedAt = activatedAt;
         }
     }
 
