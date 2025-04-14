@@ -39,7 +39,7 @@ public class WaitingService {
                 .orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
 
         // 현재 사용자의 활성 웨이팅 상태 확인
-        waitingRepository.findByUserIdAndStatus(userId, WaitingStatus.WAITING)
+        waitingRepository.findByUserIdAndStatusIn(userId, List.of(WaitingStatus.REQUESTED, WaitingStatus.WAITING, WaitingStatus.CALLED))
                 .ifPresent(waiting -> {
                     throw new CustomException(ExceptionType.SINGLE_WAIT_ALLOWED);
                 });
