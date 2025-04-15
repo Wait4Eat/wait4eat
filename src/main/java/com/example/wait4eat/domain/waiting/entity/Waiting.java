@@ -71,6 +71,13 @@ public class Waiting{
         }
     }
 
+    public void requestToCancel(LocalDateTime cancelledAt) {
+        if (this.status != WaitingStatus.CANCELLED) {
+            this.status = WaitingStatus.CANCELLED;
+            this.cancelledAt = cancelledAt;
+        }
+    }
+
     public void cancel(LocalDateTime cancelledAt) {
         if (this.status != WaitingStatus.CANCELLED) {
             this.status = WaitingStatus.CANCELLED;
