@@ -6,13 +6,14 @@ import com.example.wait4eat.domain.store.dto.response.CreateStoreResponse;
 import com.example.wait4eat.domain.store.dto.response.GetStoreDetailResponse;
 import com.example.wait4eat.domain.store.dto.response.GetStoreListResponse;
 import com.example.wait4eat.domain.store.entity.Store;
+import com.example.wait4eat.domain.store.entity.StoreDocument;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
+import com.example.wait4eat.domain.store.repository.StoreSearchRepository;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,14 +22,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class StoreService {
 
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
+    private final StoreSearchRepository storeSearchRepository;
 
     @Transactional
     public CreateStoreResponse create(AuthUser authUser, CreateStoreRequest request) {
@@ -52,6 +52,9 @@ public class StoreService {
                 .build();
 
         Store savedStore = storeRepository.save(store);
+
+        // Elasticsearch 에도 저장
+        storeSearchRepository.save(StoreDocument.from(savedStore));
 
         return CreateStoreResponse.of(savedStore, user);
     }
