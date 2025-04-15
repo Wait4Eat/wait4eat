@@ -39,6 +39,7 @@ public class WaitingService {
             WaitingStatus.REQUESTED,
             WaitingStatus.WAITING,
             WaitingStatus.CALLED,
+            WaitingStatus.CANCELLED,
             WaitingStatus.COMPLETED
     );
 
@@ -160,17 +161,15 @@ public class WaitingService {
             updated = true;
         }
 
-//        // 사장님 웨이팅 개별 취소 (예외적으로 모든 상태에서 CANCELLED 가능, 단 COMPLETED 제외)
-//        if (newStatus == WaitingStatus.CANCELLED && currentStatus != WaitingStatus.CANCELLED && currentStatus != WaitingStatus.COMPLETED) {
-//            handleCancelled(waiting);
-//            updated = true;
-//        }
+        // 사장님 웨이팅 개별 취소 (REQUESTED -> CANCELLED)
+        if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.REQUESTED && canAdvance) {
+            handleRequestedToCancelled(waiting);
+            updated = true;
+        }
 
-        // 사장님 웨이팅 개별 취소 (예외적으로 모든 상태에서 CANCELLED 가능, 단 COMPLETED 제외. REQUESTED는 다른 메서드로 분리해야 함)
+        // 사장님 웨이팅 개별 취소 (WAITING, CALLED -> CANCELLED)
         if (newStatus == WaitingStatus.CANCELLED &&
-                currentStatus != WaitingStatus.CANCELLED &&
-                currentStatus != WaitingStatus.COMPLETED &&
-                currentStatus != WaitingStatus.REQUESTED) {
+                currentStatus == WaitingStatus.WAITING || currentStatus == WaitingStatus.CALLED && canAdvance) {
             handleCancelled(waiting);
             updated = true;
         }
@@ -193,13 +192,17 @@ public class WaitingService {
         waiting.waiting(getCurrentTime());
         waiting.incrementMyWaitingOrder();
         Store store = waiting.getStore();
-        store.incrementWaitingTeamCount(); // 가게 웨이팅 팀 수 증가 + 호출된 사용자의 웨이팅 순서 +1
+        store.incrementWaitingTeamCount(); // 가게 웨이팅 팀 수 증가, 호출된 사용자의 웨이팅 순서 +1
         reorderWaitingQueue(store.getId()); // 전체 재정렬 호출
     }
 
     private void handleCalled(Waiting waiting) {
         waiting.call(getCurrentTime());
         waiting.markAsCalled(); // 가게의 웨이팅 팀 수 유지, 호출된 사용자의 웨이팅 순서 0
+    }
+
+    private void handleRequestedToCancelled(Waiting waiting) {
+        waiting.requestToCancel(getCurrentTime()); // 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지
     }
 
     private void handleCancelled(Waiting waiting) {
