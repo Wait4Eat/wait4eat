@@ -15,7 +15,6 @@ public class MyWaitingResponse {
     private final int peopleCount;
     private final int waitingTeamCount;
     private final int myWaitingOrder;
-    private final int temporaryWaitingOrder;
     private final WaitingStatus status;
     private final LocalDateTime createdAt;
     private final LocalDateTime activatedAt;
@@ -31,7 +30,6 @@ public class MyWaitingResponse {
             int peopleCount,
             int waitingTeamCount,
             int myWaitingOrder,
-            int temporaryWaitingOrder,
             WaitingStatus status,
             LocalDateTime createdAt,
             LocalDateTime activatedAt,
@@ -45,7 +43,6 @@ public class MyWaitingResponse {
         this.peopleCount = peopleCount;
         this.waitingTeamCount = waitingTeamCount;
         this.myWaitingOrder = myWaitingOrder;
-        this.temporaryWaitingOrder = temporaryWaitingOrder;
         this.status = status;
         this.createdAt = createdAt;
         this.activatedAt = activatedAt;
@@ -62,7 +59,6 @@ public class MyWaitingResponse {
                 .peopleCount(waiting.getPeopleCount())
                 .waitingTeamCount(waiting.getStore().getWaitingTeamCount())
                 .myWaitingOrder(waiting.getMyWaitingOrder())
-                .temporaryWaitingOrder(waiting.getTemporaryWaitingOrder())
                 .status(waiting.getStatus())
                 .createdAt(waiting.getCreatedAt())
                 .activatedAt(waiting.getActivatedAt())

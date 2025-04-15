@@ -56,43 +56,20 @@ public class WaitingService {
                     throw new CustomException(ExceptionType.SINGLE_WAIT_ALLOWED);
                 });
 
-        // 현재 가게의 총 웨이팅 팀 수 조회
-        //int currentTotalWaitingTeamCount = waitingRepository.countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
-
         // 고유한 주문 ID 생성 (UUID 사용)
-        // String orderId = UUID.randomUUID().toString();
+        String orderId = UUID.randomUUID().toString();
 
-        // 현재 가게의 총 웨이팅 신청 수 조회 (REQUESTED 상태 포함)
-        long currentTotalRequestedCount = waitingRepository.countByStoreIdAndStatusIn(storeId, List.of(WaitingStatus.REQUESTED)); // WAITING, CALLED 제외
-
-        // 임시 웨이팅 순번 할당
-        int temporaryWaitingOrder = (int) currentTotalRequestedCount + 1;
-
+        // 새로운 웨이팅 생성
         Waiting waiting = Waiting.builder()
                 .store(store)
                 .user(user)
-                .orderId(UUID.randomUUID().toString())
+                .orderId(orderId) // 주문 ID 저장 (UUID)
                 .peopleCount(request.getPeopleCount())
                 .myWaitingOrder(0) // 초기값 0 또는 다른 값으로 설정 (결제 후 업데이트)
-                .temporaryWaitingOrder(temporaryWaitingOrder) // 임시 순번 저장
                 .status(WaitingStatus.REQUESTED)
                 .build();
 
-        // 새로운 웨이팅 생성
-//        int myWaitingOrder = currentTotalWaitingTeamCount + 1;
-//        Waiting waiting = Waiting.builder()
-//                .store(store)
-//                .user(user)
-//                .orderId(orderId) // 주문 ID 저장 (UUID)
-//                .peopleCount(request.getPeopleCount())
-//                .myWaitingOrder(myWaitingOrder) // DB에 저장되는 순번
-//                .status(WaitingStatus.REQUESTED)
-//                .build();
-
         Waiting savedWaiting = waitingRepository.save(waiting);
-
-        // 가게의 웨이팅 팀 수 증가
-        //store.incrementWaitingTeamCount();
 
         return CreateWaitingResponse.from(savedWaiting);
     }
@@ -162,8 +139,6 @@ public class WaitingService {
         return UpdateWaitingResponse.from(waiting);
     }
 
-
-
     public boolean updateWaiting(WaitingStatus newStatus, Waiting waiting) {
         WaitingStatus currentStatus = waiting.getStatus();
 
@@ -216,8 +191,9 @@ public class WaitingService {
 
     private void handleWaiting(Waiting waiting) {
         waiting.waiting(getCurrentTime());
+        waiting.incrementMyWaitingOrder();
         Store store = waiting.getStore();
-        store.incrementWaitingTeamCount(); // 가게 웨이팅 팀 수 증가 + 호출된 사용자의 웨이팅 순서 +1 (이거 추가)
+        store.incrementWaitingTeamCount(); // 가게 웨이팅 팀 수 증가 + 호출된 사용자의 웨이팅 순서 +1
         reorderWaitingQueue(store.getId()); // 전체 재정렬 호출
     }
 
