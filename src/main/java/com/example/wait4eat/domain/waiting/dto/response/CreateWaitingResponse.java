@@ -15,6 +15,7 @@ public class CreateWaitingResponse {
     private final String orderId;
     private final int peopleCount;
     private final int myWaitingOrder;
+    private final int temporaryWaitingOrder;
     private final WaitingStatus status;
     private final LocalDateTime createdAt;
 
@@ -26,6 +27,7 @@ public class CreateWaitingResponse {
             String orderId,
             int peopleCount,
             int myWaitingOrder,
+            int temporaryWaitingOrder,
             WaitingStatus status,
             LocalDateTime createdAt
     ) {
@@ -35,6 +37,7 @@ public class CreateWaitingResponse {
         this.orderId = orderId;
         this.peopleCount = peopleCount;
         this.myWaitingOrder = myWaitingOrder;
+        this.temporaryWaitingOrder = temporaryWaitingOrder;
         this.status = status;
         this.createdAt = createdAt;
     }
@@ -47,6 +50,7 @@ public class CreateWaitingResponse {
                 .orderId(waiting.getOrderId())
                 .peopleCount(waiting.getPeopleCount())
                 .myWaitingOrder(waiting.getMyWaitingOrder())
+                .temporaryWaitingOrder(waiting.getTemporaryWaitingOrder())
                 .status(waiting.getStatus())
                 .createdAt(waiting.getCreatedAt())
                 .build();

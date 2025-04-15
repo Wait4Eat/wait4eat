@@ -15,6 +15,7 @@ import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,17 @@ public class WaitingService {
     private final WaitingRepository waitingRepository;
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+
+    private static final String WAITING_QUEUE_PREFIX = "waiting:store:";
+
+    // 웨이팅 상태 순서 정의
+    private static final List<WaitingStatus> statusOrder = List.of(
+            WaitingStatus.REQUESTED,
+            WaitingStatus.WAITING,
+            WaitingStatus.CALLED,
+            WaitingStatus.COMPLETED
+    );
 
     @Transactional
     public CreateWaitingResponse createWaiting(Long userId, Long storeId, CreateWaitingRequest request) {
@@ -45,23 +57,42 @@ public class WaitingService {
                 });
 
         // 현재 가게의 총 웨이팅 팀 수 조회
-        int currentTotalWaitingTeamCount = waitingRepository.countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
+        //int currentTotalWaitingTeamCount = waitingRepository.countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
 
         // 고유한 주문 ID 생성 (UUID 사용)
-        String orderId = UUID.randomUUID().toString();
+        // String orderId = UUID.randomUUID().toString();
 
-        // 새로운 웨이팅 생성
-        int myWaitingOrder = currentTotalWaitingTeamCount + 1;
+        // 현재 가게의 총 웨이팅 신청 수 조회 (REQUESTED 상태 포함)
+        long currentTotalRequestedCount = waitingRepository.countByStoreIdAndStatusIn(storeId, List.of(WaitingStatus.REQUESTED)); // WAITING, CALLED 제외
+
+        // 임시 웨이팅 순번 할당
+        int temporaryWaitingOrder = (int) currentTotalRequestedCount + 1;
+
         Waiting waiting = Waiting.builder()
                 .store(store)
                 .user(user)
-                .orderId(orderId) // 주문 ID 저장 (UUID)
+                .orderId(UUID.randomUUID().toString())
                 .peopleCount(request.getPeopleCount())
-                .myWaitingOrder(myWaitingOrder) // DB에 저장되는 순번
+                .myWaitingOrder(0) // 초기값 0 또는 다른 값으로 설정 (결제 후 업데이트)
+                .temporaryWaitingOrder(temporaryWaitingOrder) // 임시 순번 저장
                 .status(WaitingStatus.REQUESTED)
                 .build();
 
+        // 새로운 웨이팅 생성
+//        int myWaitingOrder = currentTotalWaitingTeamCount + 1;
+//        Waiting waiting = Waiting.builder()
+//                .store(store)
+//                .user(user)
+//                .orderId(orderId) // 주문 ID 저장 (UUID)
+//                .peopleCount(request.getPeopleCount())
+//                .myWaitingOrder(myWaitingOrder) // DB에 저장되는 순번
+//                .status(WaitingStatus.REQUESTED)
+//                .build();
+
         Waiting savedWaiting = waitingRepository.save(waiting);
+
+        // 가게의 웨이팅 팀 수 증가
+        //store.incrementWaitingTeamCount();
 
         return CreateWaitingResponse.from(savedWaiting);
     }
@@ -126,24 +157,21 @@ public class WaitingService {
             throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
         }
 
-        WaitingStatus newStatus = updateWaitingRequest.getStatus();
+        updateWaiting(updateWaitingRequest.getStatus(), waiting);
+
+        return UpdateWaitingResponse.from(waiting);
+    }
+
+
+
+    public boolean updateWaiting(WaitingStatus newStatus, Waiting waiting) {
         WaitingStatus currentStatus = waiting.getStatus();
 
         boolean updated = false;
 
-        // 웨이팅 상태 순서 정의
-        List<WaitingStatus> statusOrder = List.of(
-                WaitingStatus.REQUESTED,
-                WaitingStatus.WAITING,
-                WaitingStatus.CALLED,
-                WaitingStatus.COMPLETED
-        );
 
         // 상태 변경 가능 여부 확인 (역행 방지)
-        boolean canAdvance = false;
-        if (statusOrder.indexOf(newStatus) > statusOrder.indexOf(currentStatus)) {
-            canAdvance = true;
-        }
+        boolean canAdvance = statusOrder.indexOf(newStatus) > statusOrder.indexOf(currentStatus);
 
         // 웨이팅 접수 -> 웨이팅 목록 추가
         if (newStatus == WaitingStatus.WAITING && currentStatus == WaitingStatus.REQUESTED && canAdvance) {
@@ -157,15 +185,23 @@ public class WaitingService {
             updated = true;
         }
 
-        // 사장님 웨이팅 개별 취소 (예외적으로 모든 상태에서 CANCELLED 가능, 단 COMPLETED 제외)
-        else if (newStatus == WaitingStatus.CANCELLED && currentStatus != WaitingStatus.CANCELLED && currentStatus != WaitingStatus.COMPLETED) {
+//        // 사장님 웨이팅 개별 취소 (예외적으로 모든 상태에서 CANCELLED 가능, 단 COMPLETED 제외)
+//        if (newStatus == WaitingStatus.CANCELLED && currentStatus != WaitingStatus.CANCELLED && currentStatus != WaitingStatus.COMPLETED) {
+//            handleCancelled(waiting);
+//            updated = true;
+//        }
+
+        // 사장님 웨이팅 개별 취소 (예외적으로 모든 상태에서 CANCELLED 가능, 단 COMPLETED 제외. REQUESTED는 다른 메서드로 분리해야 함)
+        if (newStatus == WaitingStatus.CANCELLED &&
+                currentStatus != WaitingStatus.CANCELLED &&
+                currentStatus != WaitingStatus.COMPLETED &&
+                currentStatus != WaitingStatus.REQUESTED) {
             handleCancelled(waiting);
             updated = true;
         }
 
-
         // 웨이팅 팀이 가게로 입장 완료
-        else if (newStatus == WaitingStatus.COMPLETED && currentStatus == WaitingStatus.CALLED && canAdvance) {
+        if (newStatus == WaitingStatus.COMPLETED && currentStatus == WaitingStatus.CALLED && canAdvance) {
             handleCompleted(waiting);
             updated = true;
         }
@@ -175,13 +211,13 @@ public class WaitingService {
                     String.format("현재 상태: %s, 요청 상태: %s", currentStatus, newStatus));
         }
 
-        return UpdateWaitingResponse.from(waiting);
+        return updated;
     }
 
     private void handleWaiting(Waiting waiting) {
         waiting.waiting(getCurrentTime());
         Store store = waiting.getStore();
-        store.incrementWaitingTeamCount(); // 가게 웨이팅 팀 수 증가
+        store.incrementWaitingTeamCount(); // 가게 웨이팅 팀 수 증가 + 호출된 사용자의 웨이팅 순서 +1 (이거 추가)
         reorderWaitingQueue(store.getId()); // 전체 재정렬 호출
     }
 
@@ -215,5 +251,6 @@ public class WaitingService {
         for (Waiting waiting : waitingList) {
             waiting.updateMyWaitingOrder(order++);
         }
+        waitingRepository.saveAll(waitingList);
     }
 }
