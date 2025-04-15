@@ -1,7 +1,5 @@
 package com.example.wait4eat.domain.payment.client;
 
-import com.example.wait4eat.domain.payment.entity.Payment;
-import com.example.wait4eat.domain.waiting.entity.Waiting;
 import lombok.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;

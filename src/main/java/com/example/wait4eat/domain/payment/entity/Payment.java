@@ -61,15 +61,25 @@ public class Payment {
             User user,
             Waiting waiting,
             Coupon coupon,
+            String paymentKey,
             BigDecimal originalAmount,
             BigDecimal amount,
-            PaymentStatus status
+            PaymentStatus status,
+            LocalDateTime paidAt,
+            LocalDateTime refundedAt,
+            LocalDateTime failedAt,
+            LocalDateTime cancelledAt
     ) {
         this.user = user;
         this.waiting = waiting;
         this.coupon = coupon;
+        this.paymentKey = paymentKey;
         this.originalAmount = originalAmount;
         this.amount = amount;
         this.status = status;
+        this.paidAt = paidAt;
+        this.refundedAt = refundedAt;
+        this.failedAt = failedAt;
+        this.cancelledAt = cancelledAt;
     }
 }
