@@ -145,7 +145,6 @@ public class WaitingService {
 
         boolean updated = false;
 
-
         // 상태 변경 가능 여부 확인 (역행 방지)
         boolean canAdvance = statusOrder.indexOf(newStatus) > statusOrder.indexOf(currentStatus);
 
@@ -156,26 +155,26 @@ public class WaitingService {
         }
 
         // 사장님 웨이팅 팀 호출
-        if (newStatus == WaitingStatus.CALLED && currentStatus == WaitingStatus.WAITING && canAdvance) {
+        else if (newStatus == WaitingStatus.CALLED && currentStatus == WaitingStatus.WAITING && canAdvance) {
             handleCalled(waiting);
             updated = true;
         }
 
         // 사장님 웨이팅 개별 취소 (REQUESTED -> CANCELLED)
-        if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.REQUESTED && canAdvance) {
+        else if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.REQUESTED && canAdvance) {
             handleRequestedToCancelled(waiting);
             updated = true;
         }
 
         // 사장님 웨이팅 개별 취소 (WAITING, CALLED -> CANCELLED)
-        if (newStatus == WaitingStatus.CANCELLED &&
-                currentStatus == WaitingStatus.WAITING || currentStatus == WaitingStatus.CALLED && canAdvance) {
+        else if (newStatus == WaitingStatus.CANCELLED &&
+                (currentStatus == WaitingStatus.WAITING || currentStatus == WaitingStatus.CALLED) && canAdvance) {
             handleCancelled(waiting);
             updated = true;
         }
 
         // 웨이팅 팀이 가게로 입장 완료
-        if (newStatus == WaitingStatus.COMPLETED && currentStatus == WaitingStatus.CALLED && canAdvance) {
+        else if (newStatus == WaitingStatus.COMPLETED && currentStatus == WaitingStatus.CALLED && canAdvance) {
             handleCompleted(waiting);
             updated = true;
         }
