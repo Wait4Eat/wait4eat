@@ -222,7 +222,7 @@ public class WaitingService {
     }
 
     private void reorderWaitingQueue(Long storeId) {
-        List<Waiting> waitingList = waitingRepository.findByStoreIdAndStatusOrderByCreatedAtAsc(storeId, WaitingStatus.WAITING);
+        List<Waiting> waitingList = waitingRepository.findByStoreIdAndStatusOrderByActivatedAtAsc(storeId, WaitingStatus.WAITING);
         int order = 1;
         for (Waiting waiting : waitingList) {
             waiting.updateMyWaitingOrder(order++);
