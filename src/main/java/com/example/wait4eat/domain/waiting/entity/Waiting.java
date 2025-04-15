@@ -38,7 +38,9 @@ public class Waiting{
     @Column(nullable = false)
     private int peopleCount;
 
-    private int myWaitingOrder; // 내 웨이팅 순서
+    private int myWaitingOrder; // 확정된 내 웨이팅 순서 (결제 후)
+
+    private int temporaryWaitingOrder; // 임시 웨이팅 순서 (결제 전)
 
     @Enumerated(EnumType.STRING)
     private WaitingStatus status;
@@ -55,12 +57,13 @@ public class Waiting{
     private LocalDateTime enteredAt;
 
     @Builder
-    public Waiting(Store store, User user, String orderId, int peopleCount, int myWaitingOrder, WaitingStatus status) {
+    public Waiting(Store store, User user, String orderId, int peopleCount, int myWaitingOrder, int temporaryWaitingOrder, WaitingStatus status) {
         this.store = store;
         this.user = user;
         this.orderId = orderId;
         this.peopleCount = peopleCount;
         this.myWaitingOrder = myWaitingOrder;
+        this.temporaryWaitingOrder = temporaryWaitingOrder;
         this.status = status;
     }
 
