@@ -13,17 +13,20 @@
     document.getElementById("payBtn").addEventListener("click", function () {
         const toss = TossPayments("test_ck_KNbdOvk5rkOdPmx5Mk72rn07xlzm");
 
-        const originalAmount = 2000;
+        const orderId = "WAIT-20250403-12345676890";
+        const couponId = "COUPON-12345";
+
+        const originalAmount = 3000;
         const discountAmount = 500;
         const amount = Math.max(originalAmount - discountAmount, 0);
 
         toss.requestPayment("카드", {
             amount: amount,
-            orderName: "요아정 웨이팅 예약금",
-            orderId: "WAIT-20250403-12345676",
+            orderName: "동대문 엽기떡볶이 웨이팅 예약금",
+            orderId: orderId,
             customerKey: "user-1",
             successUrl: "http://localhost:8080/api/v1/payments/success",
-            failUrl: "http://localhost:8080/api/v1/payments/fail"
+            failUrl: "http://localhost:8080/api/v1/payments/fail",
         });
     });
 </script>
