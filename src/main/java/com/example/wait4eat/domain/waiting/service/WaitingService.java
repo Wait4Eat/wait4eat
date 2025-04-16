@@ -190,7 +190,6 @@ public class WaitingService {
     // REQUESTED -> WAITING: 가게 웨이팅 팀 수 증가, 호출된 사용자의 웨이팅 순서 +1
     private void handleWaiting(Waiting waiting) {
         waiting.waiting(getCurrentTime());
-        waiting.incrementMyWaitingOrder();
         reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
         int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
         log.info("가게 {} 웨이팅 팀 수 증가: {}", waiting.getStore().getId(), currentCount);
@@ -208,7 +207,7 @@ public class WaitingService {
     // REQUESTED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지
     private void handleRequestedToCancelled(Waiting waiting) {
         waiting.cancel(getCurrentTime());
-        log.info("가게 {} 웨이팅 요청 취소됨 (대기 전). 웨이팅 ID: {}", waiting.getStore().getId(), waiting.getId());
+        log.info("가게 {} 결제 전 웨이팅 요청 취소됨. 웨이팅 ID: {}", waiting.getStore().getId(), waiting.getId());
     }
 
     // WAITING -> CANCELLED: 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지
@@ -216,7 +215,7 @@ public class WaitingService {
         waiting.cancel(getCurrentTime());
         reorderWaitingQueue(waiting.getStore().getId());
         int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
-        log.info("가게 {} 웨이팅 취소됨 (대기 중). 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
+        log.info("가게 {} 대기 중인 웨이팅 취소됨. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
     }
 
     // CALLED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지
@@ -224,7 +223,7 @@ public class WaitingService {
         waiting.cancel(getCurrentTime());
         reorderWaitingQueue(waiting.getStore().getId());
         int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
-        log.info("가게 {} 웨이팅 취소됨 (호출). 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
+        log.info("가게 {} 호출된 웨이팅 취소됨. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
     }
 
     // CALLED -> COMPLETED: 가게 웨이팅 팀 수 그대로, 입장한 사용자의 웨이팅 순서 0
@@ -233,23 +232,29 @@ public class WaitingService {
         waiting.markAsCalled();
         reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
         int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
-        log.info("가게 {} 웨이팅 완료 (입장). 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
+        log.info("가게 {} 호출된 웨이팅 입장 완료. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
     }
 
     private LocalDateTime getCurrentTime() {
         return LocalDateTime.now();
     }
 
+    public void updateWaitingOrder(Long waitingId, int newOrder) {
+        waitingRepository.findById(waitingId)
+                .ifPresent(waiting -> waiting.myWaitingOrder(newOrder));
+    }
+
+    // 사용자의 웨이팅 번호
     private void reorderWaitingQueue(Long storeId) {
         List<Waiting> waitingList = waitingRepository.findByStoreIdAndStatusOrderByActivatedAtAsc(storeId, WaitingStatus.WAITING);
         int order = 1;
         for (Waiting waiting : waitingList) {
-            waiting.updateMyWaitingOrder(order++);
+            updateWaitingOrder(waiting.getId(), order++);
         }
         waitingRepository.saveAll(waitingList);
     }
 
-    // 특정 가게의 현재 웨이팅 팀 수를 계산하는 메서드 (추가)
+    // 특정 가게의 현재 웨이팅 팀 수를 계산하는 메서드
     public int getCurrentWaitingTeamCount(Long storeId) {
         return waitingRepository.countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
     }
