@@ -28,6 +28,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
+    // 특정 가게의 주어진 상태에 해당하는 웨이팅 수 조회
     public int countByStoreIdAndStatus(Long storeId, WaitingStatus status) {
         Integer count = queryFactory
                 .select(waiting.count().intValue())
@@ -73,9 +74,12 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .where(waiting.id.in(waitingIds))
                 .fetch();
 
+        // 추가: waitingTeamCount 구하기
+        int currentWaitingTeamCount = countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
+
         // 3. 조회된 Waiting 엔티티 리스트를 WaitingResponse로 변환
         List<WaitingResponse> content = waitings.stream()
-                .map(WaitingResponse::from)
+                .map(waiting -> WaitingResponse.of(waiting, currentWaitingTeamCount))
                 .collect(Collectors.toList());
 
         // 4. 페이징 처리를 위한 전체 개수 쿼리
@@ -98,8 +102,14 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                         .and(waiting.status.in(WaitingStatus.REQUESTED, WaitingStatus.WAITING, WaitingStatus.CALLED)))
                 .fetchOne();
 
-        return Optional.ofNullable(waitingResult)
-                .map(MyWaitingResponse::from);
+        // 추가: waitingTeamCount 구하기
+        if (waitingResult != null) {
+            Long storeId = waitingResult.getStore().getId(); // waitingResult에서 storeId를 가져옴
+            int currentWaitingTeamCount = countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
+            return Optional.of(MyWaitingResponse.of(waitingResult, currentWaitingTeamCount));
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override
