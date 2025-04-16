@@ -15,8 +15,8 @@ import com.example.wait4eat.domain.payment.enums.PaymentStatus;
 import com.example.wait4eat.domain.payment.repository.PaymentRepository;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
+import com.example.wait4eat.global.auth.dto.AuthUser;
 import lombok.*;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,41 +35,34 @@ public class PaymentServiceImpl implements PaymentService {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public PreparePaymentResponse preparePayment(PreparePaymentRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
+        AuthUser authUser = (AuthUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userRepository.findByEmail(authUser.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("로그인 사용자 정보를 찾을 수 없습니다."));
 
-        Long waitingId = request.getWaitingId();
-        Long couponId = request.getCouponId();
-
-        Waiting waiting = waitingRepository.findById(waitingId)
+        Waiting waiting = waitingRepository.findById(request.getWaitingId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 웨이팅입니다."));
 
         if (!waiting.getUser().getId().equals(user.getId())) {
             throw new IllegalStateException("해당 웨이팅은 현재 로그인한 사용자의 것이 아닙니다.");
         }
 
-        Coupon coupon = couponRepository.findById(couponId)
+        Coupon coupon = couponRepository.findById(request.getCouponId())
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 쿠폰입니다."));
 
-        String orderId = waiting.getOrderId();
         int originalAmount = waiting.getStore().getDepositAmount();
         int discountAmount = coupon.getDiscountAmount().intValue();
         int amount = Math.max(originalAmount - discountAmount, 0);
 
-        String customerKey = "user-" + waiting.getUser().getId();
-
         return PreparePaymentResponse.builder()
-                .orderId(orderId)
+                .orderId(waiting.getOrderId())
                 .originalAmount(BigDecimal.valueOf(originalAmount))
                 .amount(BigDecimal.valueOf(amount))
-                .customerKey(customerKey)
+                .customerKey("user-" + user.getId())
                 .shopName(waiting.getStore().getName())
-                .successUrl("http://localhost:3000/payments/success")
-                .failUrl("http://localhost:3000/payments/fail")
+                .successUrl("http://localhost:8080/payments/success" + "?couponId=" + coupon.getId())
+                .failUrl("http://localhost:8080/payments/fail")
                 .build();
     }
 
@@ -84,9 +77,10 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = Payment.builder()
                 .paymentKey(paymentKey)
                 .amount(amount)
+                .originalAmount(BigDecimal.valueOf(waiting.getStore().getDepositAmount()))
                 .user(waiting.getUser())
-                .waiting(waiting)
                 .status(PaymentStatus.PAID)
+                .paidAt(LocalDateTime.now())
                 .build();
 
         paymentRepository.save(payment);
@@ -109,7 +103,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
         payment.getRefundedAt();
         paymentRepository.save(payment);
-        
+
         return RefundPaymentResponse.builder()
                 .message("환불이 완료되었습니다.")
                 .refundedAt(LocalDateTime.now().toString())
