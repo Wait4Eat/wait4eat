@@ -4,10 +4,7 @@ import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -96,12 +93,8 @@ public class Waiting{
         this.myWaitingOrder = 0;
     }
 
-    public void updateMyWaitingOrder(int newOrder) {
-        this.myWaitingOrder = newOrder;
-    }
-
-    public void incrementMyWaitingOrder() {
-        this.myWaitingOrder++;
+    public void myWaitingOrder(int myWaitingOrder) {
+        this.myWaitingOrder = myWaitingOrder;
     }
 
 }
