@@ -13,6 +13,7 @@ import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WaitingService {
@@ -159,10 +161,15 @@ public class WaitingService {
             updated = true;
         }
 
-        // 사장님 웨이팅 개별 취소 (WAITING, CALLED -> CANCELLED)
-        else if (newStatus == WaitingStatus.CANCELLED &&
-                (currentStatus == WaitingStatus.WAITING || currentStatus == WaitingStatus.CALLED) && canAdvance) {
-            handleCancelled(waiting);
+        // 사장님 웨이팅 개별 취소 (WAITING -> CANCELLED)
+        else if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.WAITING && canAdvance) {
+            handleWaitingToCancelled(waiting);
+            updated = true;
+        }
+
+        // 사장님 웨이팅 개별 취소 (CALLED -> CANCELLED)
+        else if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.CALLED && canAdvance) {
+            handleCalledToCancelled(waiting);
             updated = true;
         }
 
@@ -180,36 +187,53 @@ public class WaitingService {
         return updated;
     }
 
+    // REQUESTED -> WAITING: 가게 웨이팅 팀 수 증가, 호출된 사용자의 웨이팅 순서 +1
     private void handleWaiting(Waiting waiting) {
         waiting.waiting(getCurrentTime());
         waiting.incrementMyWaitingOrder();
-        Store store = waiting.getStore();
-        store.incrementWaitingTeamCount(); // 가게 웨이팅 팀 수 증가, 호출된 사용자의 웨이팅 순서 +1
-        reorderWaitingQueue(store.getId()); // 전체 재정렬 호출
+        reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
+        int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
+        log.info("가게 {} 웨이팅 팀 수 증가: {}", waiting.getStore().getId(), currentCount);
     }
 
+    // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0
     private void handleCalled(Waiting waiting) {
         waiting.call(getCurrentTime());
-        waiting.markAsCalled(); // 가게의 웨이팅 팀 수 유지, 호출된 사용자의 웨이팅 순서 0
+        waiting.markAsCalled();
+        reorderWaitingQueue(waiting.getStore().getId());
+        int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
+        log.info("가게 {} 웨이팅 팀 호출됨. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
     }
 
+    // REQUESTED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지
     private void handleRequestedToCancelled(Waiting waiting) {
-        waiting.requestToCancel(getCurrentTime()); // 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지
-    }
-
-    private void handleCancelled(Waiting waiting) {
         waiting.cancel(getCurrentTime());
-        Store store = waiting.getStore();
-        store.decrementWaitingTeamCount();  // 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지
-        reorderWaitingQueue(store.getId()); // 전체 재정렬 호출
+        log.info("가게 {} 웨이팅 요청 취소됨 (대기 전). 웨이팅 ID: {}", waiting.getStore().getId(), waiting.getId());
     }
 
+    // WAITING -> CANCELLED: 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지
+    private void handleWaitingToCancelled(Waiting waiting) {
+        waiting.cancel(getCurrentTime());
+        reorderWaitingQueue(waiting.getStore().getId());
+        int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
+        log.info("가게 {} 웨이팅 취소됨 (대기 중). 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
+    }
+
+    // CALLED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지
+    private void handleCalledToCancelled(Waiting waiting) {
+        waiting.cancel(getCurrentTime());
+        reorderWaitingQueue(waiting.getStore().getId());
+        int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
+        log.info("가게 {} 웨이팅 취소됨 (호출). 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
+    }
+
+    // CALLED -> COMPLETED: 가게 웨이팅 팀 수 그대로, 입장한 사용자의 웨이팅 순서 0
     private void handleCompleted(Waiting waiting) {
         waiting.enter(getCurrentTime());
         waiting.markAsCalled();
-        Store store = waiting.getStore();
-        store.decrementWaitingTeamCount();  // 가게 웨이팅 팀 수 감소, 입장한 사용자의 웨이팅 순서 0
-        reorderWaitingQueue(store.getId()); // 전체 재정렬 호출
+        reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
+        int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
+        log.info("가게 {} 웨이팅 완료 (입장). 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
     }
 
     private LocalDateTime getCurrentTime() {
@@ -223,5 +247,10 @@ public class WaitingService {
             waiting.updateMyWaitingOrder(order++);
         }
         waitingRepository.saveAll(waitingList);
+    }
+
+    // 특정 가게의 현재 웨이팅 팀 수를 계산하는 메서드 (추가)
+    public int getCurrentWaitingTeamCount(Long storeId) {
+        return waitingRepository.countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
     }
 }

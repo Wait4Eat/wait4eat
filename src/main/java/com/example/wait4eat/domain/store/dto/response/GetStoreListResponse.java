@@ -15,7 +15,6 @@ public class GetStoreListResponse {
     private final LocalTime openTime;
     private final LocalTime closeTime;
     private final int depositAmount;
-    private final int waitingTeamCount;
 
     @Builder
     private GetStoreListResponse(
@@ -24,8 +23,7 @@ public class GetStoreListResponse {
             String address,
             LocalTime openTime,
             LocalTime closeTime,
-            int depositAmount,
-            int waitingTeamCount
+            int depositAmount
     ) {
         this.id = id;
         this.name = name;
@@ -33,7 +31,6 @@ public class GetStoreListResponse {
         this.openTime = openTime;
         this.closeTime = closeTime;
         this.depositAmount = depositAmount;
-        this.waitingTeamCount = waitingTeamCount;
     }
 
     public static GetStoreListResponse from(Store store) {
@@ -44,7 +41,6 @@ public class GetStoreListResponse {
                 .openTime(store.getOpenTime())
                 .closeTime(store.getCloseTime())
                 .depositAmount(store.getDepositAmount())
-                .waitingTeamCount(store.getWaitingTeamCount())
                 .build();
     }
 }
