@@ -45,8 +45,6 @@ public class Store {
     @Column(nullable = false)
     private int depositAmount;
 
-    private int waitingTeamCount; // 가게의 현재 웨이팅 팀 수
-
     @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -62,8 +60,7 @@ public class Store {
             LocalTime openTime,
             LocalTime closeTime,
             String description,
-            int depositAmount,
-            int waitingTeamCount
+            int depositAmount
     ) {
         this.user = user;
         this.name = name;
@@ -72,18 +69,6 @@ public class Store {
         this.closeTime = closeTime;
         this.description = description;
         this.depositAmount = depositAmount;
-        this.waitingTeamCount = waitingTeamCount;
     }
 
-    // 웨이팅 팀 수를 증가
-    public void incrementWaitingTeamCount() {
-        this.waitingTeamCount++;
-    }
-
-    // 웨이팅 팀 수를 감소
-    public void decrementWaitingTeamCount() {
-        if (this.waitingTeamCount > 0) {
-            this.waitingTeamCount--;
-        }
-    }
 }

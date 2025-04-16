@@ -19,7 +19,6 @@ public class GetStoreDetailResponse {
     private final LocalTime closeTime;
     private final String description;
     private final int depositAmount;
-    private final int waitingTeamCount;
     private final LocalDateTime createdAt;
 
     @Builder
@@ -32,7 +31,6 @@ public class GetStoreDetailResponse {
             LocalTime closeTime,
             String description,
             int depositAmount,
-            int waitingTeamCount,
             LocalDateTime createdAt
     ) {
         this.id = id;
@@ -43,7 +41,6 @@ public class GetStoreDetailResponse {
         this.closeTime = closeTime;
         this.description = description;
         this.depositAmount = depositAmount;
-        this.waitingTeamCount = waitingTeamCount;
         this.createdAt = createdAt;
     }
 
@@ -57,7 +54,6 @@ public class GetStoreDetailResponse {
                 .closeTime(store.getCloseTime())
                 .description(store.getDescription())
                 .depositAmount(store.getDepositAmount())
-                .waitingTeamCount(store.getWaitingTeamCount())
                 .createdAt(store.getCreatedAt())
                 .build();
 
