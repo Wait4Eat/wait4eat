@@ -1,6 +1,5 @@
 package com.example.wait4eat.domain.review.entity;
 
-import com.example.wait4eat.domain.review.dto.request.UpdateReviewRequest;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
