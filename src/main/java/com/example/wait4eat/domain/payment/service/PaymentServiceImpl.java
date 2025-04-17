@@ -16,7 +16,7 @@ import com.example.wait4eat.domain.payment.repository.PaymentRepository;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import com.example.wait4eat.global.auth.dto.AuthUser;
-import lombok.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;

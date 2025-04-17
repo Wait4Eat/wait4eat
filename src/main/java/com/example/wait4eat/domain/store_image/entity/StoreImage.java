@@ -1,7 +1,6 @@
 package com.example.wait4eat.domain.store_image.entity;
 
 import com.example.wait4eat.domain.store.entity.Store;
-import com.example.wait4eat.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -24,25 +23,22 @@ public class StoreImage {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "store_id")
+    @JoinColumn(name = "store_id", nullable = false)
     private Store store;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
-
+    @Column(nullable = false)
     private String storedFileName;
 
-    private String imageUrl;
+    @Column(nullable = false)
+    private String storedFileUrl;
 
     @CreatedDate
     private LocalDateTime createdAt;
 
     @Builder
-    public StoreImage(Store store, User user, String storedFileName, String imageUrl) {
+    public StoreImage(Store store, String storedFileName, String storedFileUrl) {
         this.store = store;
-        this.user = user;
         this.storedFileName = storedFileName;
-        this.imageUrl = imageUrl;
+        this.storedFileUrl = storedFileUrl;
     }
 }

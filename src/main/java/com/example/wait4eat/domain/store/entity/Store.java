@@ -28,23 +28,27 @@ public class Store {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private String address;
 
+    @Column(nullable = false)
     private LocalTime openTime;
 
+    @Column(nullable = false)
     private LocalTime closeTime;
 
     private String description;
 
-    private String imageUrl;
-
+    @Column(nullable = false)
     private int depositAmount;
 
     private int waitingTeamCount; // 가게의 현재 웨이팅 팀 수
 
     @CreatedDate
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
@@ -58,7 +62,6 @@ public class Store {
             LocalTime openTime,
             LocalTime closeTime,
             String description,
-            String imageUrl,
             int depositAmount,
             int waitingTeamCount
     ) {
@@ -68,7 +71,6 @@ public class Store {
         this.openTime = openTime;
         this.closeTime = closeTime;
         this.description = description;
-        this.imageUrl = imageUrl;
         this.depositAmount = depositAmount;
         this.waitingTeamCount = waitingTeamCount;
     }

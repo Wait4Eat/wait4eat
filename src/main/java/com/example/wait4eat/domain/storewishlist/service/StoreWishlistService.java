@@ -11,6 +11,7 @@ import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class StoreWishlistService {
 
         try {
             return StoreWishlistResponse.from(storeWishlistRepository.save(storeWishlist));
-        } catch (CustomException ex) {
+        } catch (DataIntegrityViolationException ex) {
             throw new CustomException(ExceptionType.ALREADY_WISHLIST_EXISTS);
         }
     }
