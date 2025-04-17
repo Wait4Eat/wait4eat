@@ -53,7 +53,7 @@ public class SecurityConfig {
                 .rememberMe(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/test-sse.html", "/css/**", "/js/**", "/images/**", "/api/v1/payments/success",
-                                "/api/v1/payments/fail", "/payments/success", "/payments/fail").permitAll()
+                                "/api/v1/payments/fail").permitAll()
                         .requestMatchers(request -> request.getRequestURI().startsWith("/api/v1/notifications/subscribe")).permitAll()
                         .requestMatchers(request -> request.getRequestURI().startsWith("/api/v1/auth")).permitAll()
                         .anyRequest().authenticated()
@@ -64,7 +64,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        configuration.addAllowedOrigin("http://localhost:63342");
+        configuration.setAllowedOrigins(List.of("http://localhost:63342","http://localhost:8080"));
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
