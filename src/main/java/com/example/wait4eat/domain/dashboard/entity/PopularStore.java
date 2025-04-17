@@ -18,19 +18,25 @@ public class PopularStore {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private Long storeId;
 
+    @Column(nullable = false)
     private String storeName;
 
+    @Column(nullable = false)
     private int waitingCount;
 
+    @Column(nullable = false)
     private int reviewCount;
 
+    @Column(nullable = false)
     private int rank;
 
+    @Column(nullable = false)
     private PopularityType type;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "dashboard_id")
+    @JoinColumn(name = "dashboard_id", nullable = false)
     private Dashboard dashboard;
 }
