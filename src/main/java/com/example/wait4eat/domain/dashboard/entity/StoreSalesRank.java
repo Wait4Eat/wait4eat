@@ -17,15 +17,19 @@ public class StoreSalesRank {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private Long storeId;
 
+    @Column(nullable = false)
     private String storeName;
 
+    @Column(nullable = false)
     private int totalSales;
 
+    @Column(nullable = false)
     private int rank;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "dashboard_id")
+    @JoinColumn(name = "dashboard_id", nullable = false)
     private Dashboard dashboard;
 }
