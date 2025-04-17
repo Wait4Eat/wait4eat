@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class WaitingServiceTest {
+class WaitingStatusUpdateTest {
 
     @Mock
     private WaitingRepository waitingRepository;
