@@ -1,6 +1,6 @@
 package com.example.wait4eat.global.config;
 
-import com.example.wait4eat.domain.dashboard.DashboardRepository;
+import com.example.wait4eat.domain.dashboard.repository.DashboardRepository;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.payment.repository.PaymentRepository;
 import com.example.wait4eat.domain.store.repository.StoreRepository;

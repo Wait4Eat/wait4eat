@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+
 @RestController
 @RequiredArgsConstructor
 public class AuthController {
@@ -30,6 +32,7 @@ public class AuthController {
     public ResponseEntity<SuccessResponse<SigninResponse>> signin(
             @Valid @RequestBody SigninRequest request
     ) {
-        return ResponseEntity.ok(SuccessResponse.from(authService.signin(request)));
+        LocalDate today = LocalDate.now();
+        return ResponseEntity.ok(SuccessResponse.from(authService.signin(request, today)));
     }
 }

@@ -14,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -42,8 +44,8 @@ public class AuthService {
         return SignupResponse.from(savedUser);
     }
 
-    @Transactional(readOnly = true)
-    public SigninResponse signin(SigninRequest request) {
+    @Transactional
+    public SigninResponse signin(SigninRequest request, LocalDate today) {
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow(
                 () -> new CustomException(ExceptionType.USER_NOT_FOUND)
         );
@@ -52,6 +54,8 @@ public class AuthService {
             throw new CustomException(ExceptionType.INCORRECT_PASSWORD);
         }
 
+        user.setLoginDate(today);
+        userRepository.save(user);
         String bearerToken = jwtUtil.createAccessToken(user.getId(), user.getEmail(), user.getRole());
 
         return SigninResponse.of(user, bearerToken);
