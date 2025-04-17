@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 
 @Slf4j
 @ExtendWith(MockitoExtension.class)
-class IndividualUserOwnerWaitingStatusChangeTest {
+class WaitingStatusChangeByRoleTest {
 
     @InjectMocks
     private WaitingService waitingService;
@@ -54,7 +54,7 @@ class IndividualUserOwnerWaitingStatusChangeTest {
     private Long storeId = 1L;
     private User owner;
     private Store store;
-    private List<Waiting> currentWaitings = new ArrayList<>();
+    private List<Waiting> currentWaitings = new ArrayList<>(); // REQUESTED 상태를 포함한 모든 생성된 웨이팅
     private AtomicLong userIdCounter = new AtomicLong(1);
     private AtomicLong waitingIdCounter = new AtomicLong(1);
 
@@ -97,6 +97,7 @@ class IndividualUserOwnerWaitingStatusChangeTest {
         return waiting;
     }
 
+    // 상태가 WAITING 상태인것만 필터링
     private void printCurrentWaitingQueue() {
         List<Waiting> waitingQueue = currentWaitings.stream()
                 .filter(w -> w.getStatus() == WaitingStatus.WAITING)
@@ -146,7 +147,7 @@ class IndividualUserOwnerWaitingStatusChangeTest {
         // Then
         assertEquals(1L, response1.getWaitingId());
         assertEquals(2L, response2.getWaitingId());
-        // 웨이팅 생성 직후 상태는 REQUESTED 이므로 대기열(WAITING) 크기는 0이어야 합니다.
+        // 웨이팅 생성 직후 상태는 REQUESTED 이므로 대기열(WAITING) 크기는 0
         assertEquals(0, waitingQueue.size());
         assertTrue(currentWaitings.stream().anyMatch(w -> w.getId() == 1L && w.getUser().getId() == 1L && w.getPeopleCount() == 2 && w.getStatus() == WaitingStatus.REQUESTED));
         assertTrue(currentWaitings.stream().anyMatch(w -> w.getId() == 2L && w.getUser().getId() == 2L && w.getPeopleCount() == 3 && w.getStatus() == WaitingStatus.REQUESTED));
