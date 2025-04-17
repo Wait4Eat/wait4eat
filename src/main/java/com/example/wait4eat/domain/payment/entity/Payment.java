@@ -82,4 +82,8 @@ public class Payment {
         this.failedAt = failedAt;
         this.cancelledAt = cancelledAt;
     }
+    public void markAsRefunded() {
+        this.status = PaymentStatus.REFUNDED;
+        this.refundedAt = LocalDateTime.now();
+    }
 }

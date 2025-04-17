@@ -17,6 +17,7 @@ import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import com.example.wait4eat.global.auth.dto.AuthUser;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
@@ -69,7 +71,18 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public SuccessPaymentResponse handleSuccess(String paymentKey, String orderId, BigDecimal amount) {
-        tossPaymentClient.confirmPayment(paymentKey, orderId, amount);
+        try {
+            tossPaymentClient.confirmPayment(paymentKey, orderId, amount);
+        } catch (Exception e) {
+            String message = e.getMessage();
+
+            if (message != null && message.contains("ALREADY_PROCESSED_PAYMENT")) {
+                log.warn("Toss confirm skipped: 이미 처리된 결제입니다.");
+            } else {
+                log.error("Toss confirm 실패: {}", message);
+                throw e;
+            }
+        }
 
         Waiting waiting = waitingRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 웨이팅입니다."));
@@ -101,7 +114,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (payment.getStatus() != PaymentStatus.PAID) {
             throw new IllegalArgumentException("환불 가능한 상태가 아닙니다.");
         }
-        payment.getRefundedAt();
+        payment.markAsRefunded();
         paymentRepository.save(payment);
 
         return RefundPaymentResponse.builder()
