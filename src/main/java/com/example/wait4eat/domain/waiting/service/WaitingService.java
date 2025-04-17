@@ -239,7 +239,7 @@ public class WaitingService {
         return LocalDateTime.now();
     }
 
-    public void updateWaitingOrder(Long waitingId, int newOrder) {
+    private void updateWaitingOrder(Long waitingId, int newOrder) {
         waitingRepository.findById(waitingId)
                 .ifPresent(waiting -> waiting.myWaitingOrder(newOrder));
     }
