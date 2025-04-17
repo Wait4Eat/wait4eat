@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
+import java.time.LocalDate;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByPaymentKey(String paymentKey);
@@ -17,4 +17,5 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     boolean existsByOrderId(String orderId);
     Optional<Payment> findByOrderId(String orderId);
     List<Payment> findByVerifiedFalseAndCreatedAtBefore(LocalDateTime threshold);
+    Long sumSalesByDate(LocalDate yesterday);
 }

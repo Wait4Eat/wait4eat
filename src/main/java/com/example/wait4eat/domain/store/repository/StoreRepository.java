@@ -15,6 +15,8 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
 
+import java.time.LocalDate;
+
 public interface StoreRepository extends JpaRepository<Store, Long> {
     boolean existsByUserId (Long userId);
 
@@ -62,4 +64,6 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Store s where s.id = :storeId")
     Optional<Store> findByIdWithPessimisticLock(Long storeId);
+
+    Long countByCreatedAt(LocalDate yesterday);
 }
