@@ -13,6 +13,7 @@ import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,7 +33,7 @@ import static org.mockito.Mockito.*;
 
 @Slf4j
 @ExtendWith(MockitoExtension.class)
-class UpdateWaitingStatusByOwnerAndUserTest {
+class EntireWaitingStatusChangeTest {
 
     @InjectMocks
     private WaitingService waitingService;
@@ -133,7 +134,7 @@ class UpdateWaitingStatusByOwnerAndUserTest {
                 .filter(w -> w.getStatus() == WaitingStatus.WAITING)
                 .sorted(Comparator.comparing(Waiting::getMyWaitingOrder))
                 .collect(Collectors.toList());
-        log.info("--- 현재 대기열 상태 ---");
+        log.info("------ 현재 대기열 상태 ------");
         if (waitingQueue.isEmpty()) {
             log.info("  비어있음");
         } else {
@@ -143,7 +144,8 @@ class UpdateWaitingStatusByOwnerAndUserTest {
     }
 
     @Test
-    void testOwnerAndUserCancelWaitingByStatus() throws InterruptedException {
+    @DisplayName("사용자 웨이팅 취소 및 사장 웨이팅 상태 변경")
+    void testOwnerAndUserUpdateWaitingStatus() throws InterruptedException {
         final int numberOfUsers = 50;
         final int ownerActionIntervalMillis = 5000;
         final int numberOfWaitingsToActivate = 10;
@@ -157,9 +159,9 @@ class UpdateWaitingStatusByOwnerAndUserTest {
                 CreateWaitingRequest createRequest = CreateWaitingRequest.builder()
                         .peopleCount(2)
                         .build();
-                CreateWaitingResponse createdWaitingResponse = waitingService.createWaiting(currentUserId, storeId, createRequest);
-                createdWaitingIds.add(createdWaitingResponse.getWaitingId());
-                userIdToWaitingIdMap.put(currentUserId, createdWaitingResponse.getWaitingId());
+                CreateWaitingResponse createdWaitingResponse = waitingService.createWaiting(currentUserId, storeId, createRequest); // 웨이팅 생성 메서드 호출
+                createdWaitingIds.add(createdWaitingResponse.getWaitingId());                                                       // 생성된 웨이팅 ID 저장
+                userIdToWaitingIdMap.put(currentUserId, createdWaitingResponse.getWaitingId());                                     // 사용자 ID와 웨이팅 ID의 매핑 정보 저장
                 log.info("사용자 {} 웨이팅 생성 요청 (ID: {})", currentUserId, createdWaitingResponse.getWaitingId());
                 try {
                     Thread.sleep(100);
@@ -178,6 +180,8 @@ class UpdateWaitingStatusByOwnerAndUserTest {
             try {
                 Thread.sleep(userCancelDelayMillis); // 웨이팅 생성 및 일부 사장 액션 후 취소 시작
                 int cancelledCount = 0;
+
+                // userIdToWaitingIdMap을 순회하며 특정 조건을 만족하는 웨이팅에 대해 취소 메서드 호출
                 for (Long userId : userIdToWaitingIdMap.keySet()) {
                     if (cancelledCount >= numberOfUsersToCancel) {
                         break;
@@ -188,6 +192,7 @@ class UpdateWaitingStatusByOwnerAndUserTest {
                         WaitingStatus currentStatus = waitingToCancel.getStatus();
                         int lastDigit = (int) (waitingIdToCancel % 10);
 
+                        // 특정 조건: 웨이팅 ID 끝자리가 5인 REQUESTED, 6인 WAITING, 7인 CALLED 상태)
                         if ((lastDigit == 5 && currentStatus == WaitingStatus.REQUESTED) ||
                                 (lastDigit == 6 && currentStatus == WaitingStatus.WAITING) ||
                                 (lastDigit == 7 && currentStatus == WaitingStatus.CALLED)) {
@@ -205,13 +210,15 @@ class UpdateWaitingStatusByOwnerAndUserTest {
         });
         userCancelThread.start();
 
-        // 사장의 액션 스레드: REQUESTED -> WAITING 및 특정 상태 변경
+
+        // 사장의 액션 스레드: `waitingService.updateWaitingStatus()`로 웨이팅 상태 변경
         Thread ownerActionThread = new Thread(() -> {
             try {
                 Thread.sleep(3000); // 초기 웨이팅 생성을 기다림
                 int activationCycle = 0;
                 while (activationCycle * numberOfWaitingsToActivate < numberOfUsers) {
-                    // REQUESTED -> CANCELLED (사장)
+
+                    //  웨이팅 ID 끝자리가 4가 맞다면: REQUESTED -> CANCELLED 로 변경
                     log.info("--- 사장 액션 (Cycle {}): REQUESTED -> CANCELLED 처리 ---", activationCycle + 1);
                     for (Long waitingId : createdWaitingIds) {
                         Waiting waiting = currentWaitings.stream().filter(w -> w.getId().equals(waitingId)).findFirst().orElse(null);
@@ -223,11 +230,11 @@ class UpdateWaitingStatusByOwnerAndUserTest {
                         Thread.sleep(50);
                     }
 
-                    // REQUESTED -> WAITING (사장)
+                    // 웨이팅 ID 끝자리가 4가 아니면: 5초마다 10개씩 REQUESTED -> WAITING 상태로 변경
                     List<Waiting> requestedWaitings = currentWaitings.stream()
                             .filter(w -> w.getStatus() == WaitingStatus.REQUESTED && (w.getId() % 10 != 4))
                             .limit(numberOfWaitingsToActivate)
-                            .collect(Collectors.toList());
+                            .toList();
 
                     if (!requestedWaitings.isEmpty()) {
                         log.info("--- 사장 액션 (Cycle {}): {}개의 웨이팅 상태 변경 (REQUESTED -> WAITING) ---", activationCycle + 1, requestedWaitings.size());
@@ -244,6 +251,7 @@ class UpdateWaitingStatusByOwnerAndUserTest {
                         if (waiting != null) {
                             int lastDigit = (int) (waitingId % 10);
 
+                            //  웨이팅 ID 끝자리가 1: WAITING -> CALLED -> COMPLETED
                             if (lastDigit == 1 && waiting.getStatus() == WaitingStatus.WAITING) {
                                 log.info("--- 사장 (Cycle {}) 웨이팅 ID {} 상태 변경 (WAITING -> CALLED) ---", activationCycle + 1, waitingId);
                                 waitingService.updateWaitingStatus(owner.getId(), waitingId, UpdateWaitingRequest.builder().status(WaitingStatus.CALLED).build());
@@ -251,7 +259,9 @@ class UpdateWaitingStatusByOwnerAndUserTest {
                                 log.info("--- 사장 (Cycle {}) 웨이팅 ID {} 상태 변경 (CALLED -> COMPLETED) ---", activationCycle + 1, waitingId);
                                 waitingService.updateWaitingStatus(owner.getId(), waitingId, UpdateWaitingRequest.builder().status(WaitingStatus.COMPLETED).build());
                                 printCurrentWaitingQueue();
-                            } else if (lastDigit == 2) {
+                            }
+                            // 웨이팅 ID 끝자리가 2: WAITING -> CALLED -> CANCELLED
+                            else if (lastDigit == 2) {
                                 if (waiting.getStatus() == WaitingStatus.WAITING) {
                                     log.info("--- 사장 (Cycle {}) 웨이팅 ID {} 상태 변경 (WAITING -> CALLED) ---", activationCycle + 1, waitingId);
                                     waitingService.updateWaitingStatus(owner.getId(), waitingId, UpdateWaitingRequest.builder().status(WaitingStatus.CALLED).build());
@@ -262,7 +272,9 @@ class UpdateWaitingStatusByOwnerAndUserTest {
                                     waitingService.updateWaitingStatus(owner.getId(), waitingId, UpdateWaitingRequest.builder().status(WaitingStatus.CANCELLED).build());
                                     printCurrentWaitingQueue();
                                 }
-                            } else if (lastDigit == 3) {
+                            }
+                            // 웨이팅 ID 끝자리가 3: WAITING -> CANCELLED
+                            else if (lastDigit == 3) {
                                 if (waiting.getStatus() == WaitingStatus.WAITING) {
                                     log.info("--- 사장 (Cycle {}) 웨이팅 ID {} 상태 변경 (WAITING -> CANCELLED) ---", activationCycle + 1, waitingId);
                                     waitingService.updateWaitingStatus(owner.getId(), waitingId, UpdateWaitingRequest.builder().status(WaitingStatus.CANCELLED).build());
