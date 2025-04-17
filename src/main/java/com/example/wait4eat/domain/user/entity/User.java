@@ -2,14 +2,12 @@ package com.example.wait4eat.domain.user.entity;
 
 import com.example.wait4eat.domain.user.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -42,6 +40,9 @@ public class User {
 
     @LastModifiedDate
     private LocalDateTime modifiedAt;
+
+    @Setter
+    private LocalDate loginDate;
 
     @Builder
     public User(String email, String nickname, String password, UserRole role) {
