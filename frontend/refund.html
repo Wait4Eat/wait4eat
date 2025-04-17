@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>환불 테스트</title>
+</head>
+<body>
+<h2>환불 테스트</h2>
+<button id="refundBtn">환불하기</button>
+
+<script>
+  const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1IiwiZW1haWwiOiJqYW5leHh4QGV4YW1wbGUuY29tIiwidXNlclJvbGUiOiJST0xFX1VTRVIiLCJleHAiOjE3NDQ4Njk4NDgsImlhdCI6MTc0NDg2NjI0OH0.If745LCcU7LnhzzxyYUnpmLP3DqJeAtTBUQ0cw6UENE";
+
+  document.getElementById("refundBtn").addEventListener("click", async () => {
+    const paymentId = 7; // 실제 결제 완료된 paymentId로 바꿔야 함
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/payments/${paymentId}/refund`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          reason: "사용자 요청 테스트 환불"
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error("환불 실패: " + error);
+      }
+
+      const result = await response.json();
+      alert("환불 완료: " + JSON.stringify(result.data));
+    } catch (e) {
+      console.error(e);
+      alert("에러 발생: " + e.message);
+    }
+  });
+</script>
+</body>
+</html>

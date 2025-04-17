@@ -63,8 +63,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .amount(BigDecimal.valueOf(amount))
                 .customerKey("user-" + user.getId())
                 .shopName(waiting.getStore().getName())
-                .successUrl("http://localhost:8080/payments/success" + "?couponId=" + coupon.getId())
-                .failUrl("http://localhost:8080/payments/fail")
+                .successUrl("http://localhost:8080/api/v1/payments/success?couponId=" + coupon.getId())
+                .failUrl("http://localhost:8080/api/v1/payments/fail")
                 .build();
     }
 
