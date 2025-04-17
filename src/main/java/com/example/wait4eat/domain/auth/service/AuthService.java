@@ -52,7 +52,7 @@ public class AuthService {
             throw new CustomException(ExceptionType.INCORRECT_PASSWORD);
         }
 
-        String bearerToken = jwtUtil.createToken(user.getId(), user.getEmail(), user.getRole());
+        String bearerToken = jwtUtil.createAccessToken(user.getId(), user.getEmail(), user.getRole());
 
         return SigninResponse.of(user, bearerToken);
     }

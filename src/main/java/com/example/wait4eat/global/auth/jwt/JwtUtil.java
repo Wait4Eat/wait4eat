@@ -22,7 +22,8 @@ import java.util.Date;
 public class JwtUtil {
 
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final long TOKEN_TIME = 60 * 60 * 1000L; // 60분
+    private static final long ACCESS_TOKEN_TIME = 60 * 60 * 1000L;     // 60분
+    private static final long SSE_TOKEN_TIME = 2 * 60 * 1000L;         // 2분
 
     @Value("${jwt.secret.key}")
     private String secretKey;
@@ -35,25 +36,34 @@ public class JwtUtil {
         key = Keys.hmacShaKeyFor(bytes);
     }
 
-    public String createToken(Long userId, String email, UserRole userRole) {
-        Date date = new Date();
-
+    public String createAccessToken(Long userId, String email, UserRole userRole) {
+        Date now = new Date();
         return BEARER_PREFIX +
                 Jwts.builder()
                         .setSubject(String.valueOf(userId))
                         .claim("email", email)
                         .claim("userRole", userRole.getUserRole())
-                        .setExpiration(new Date(date.getTime() + TOKEN_TIME))
-                        .setIssuedAt(date) // 발급일
-                        .signWith(key, signatureAlgorithm) // 암호화 알고리즘
+                        .setExpiration(new Date(now.getTime() + ACCESS_TOKEN_TIME))
+                        .setIssuedAt(now)
+                        .signWith(key, signatureAlgorithm)
                         .compact();
+    }
+
+    public String createSseToken(Long userId) {
+        Date now = new Date();
+        return Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .claim("scope", "sse")
+                .setExpiration(new Date(now.getTime() + SSE_TOKEN_TIME))
+                .setIssuedAt(now)
+                .signWith(key, signatureAlgorithm)
+                .compact();
     }
 
     public String substringToken(String tokenValue) {
         if (StringUtils.hasText(tokenValue) && tokenValue.startsWith(BEARER_PREFIX)) {
-            return tokenValue.substring(7);
+            return tokenValue.substring(BEARER_PREFIX.length());
         }
-        log.error("토큰을 찾을 수 없습니다.");
         throw new CustomException(ExceptionType.TOKEN_NOT_FOUND);
     }
 
@@ -63,5 +73,12 @@ public class JwtUtil {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    public void validateScope(Claims claims, String expectedScope) {
+        String scope = claims.get("scope", String.class);
+        if (!expectedScope.equals(scope)) {
+            throw new CustomException(ExceptionType.INVALID_SCOPE);
+        }
     }
 }
