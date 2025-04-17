@@ -3,6 +3,7 @@ package com.example.wait4eat.domain.dashboard.entity;
 import com.example.wait4eat.domain.dashboard.enums.PopularityType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -39,4 +40,23 @@ public class PopularStore {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dashboard_id", nullable = false)
     private Dashboard dashboard;
+
+    @Builder
+    public PopularStore(
+            Long storeId,
+            String storeName,
+            int waitingCount,
+            int reviewCount,
+            int rank,
+            PopularityType type,
+            Dashboard dashboard
+    ) {
+        this.storeId = storeId;
+        this.storeName = storeName;
+        this.waitingCount = waitingCount;
+        this.reviewCount = reviewCount;
+        this.rank = rank;
+        this.type = type;
+        this.dashboard = dashboard;
+    }
 }
