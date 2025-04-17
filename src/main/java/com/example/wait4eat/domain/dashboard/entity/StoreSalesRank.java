@@ -2,6 +2,7 @@ package com.example.wait4eat.domain.dashboard.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -32,4 +33,13 @@ public class StoreSalesRank {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dashboard_id", nullable = false)
     private Dashboard dashboard;
+
+    @Builder
+    public StoreSalesRank(Long storeId, String storeName, int totalSales, int rank, Dashboard dashboard) {
+        this.storeId = storeId;
+        this.storeName = storeName;
+        this.totalSales = totalSales;
+        this.rank = rank;
+        this.dashboard = dashboard;
+    }
 }
