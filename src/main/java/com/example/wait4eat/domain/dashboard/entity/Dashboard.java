@@ -21,30 +21,30 @@ public class Dashboard {
     private Long id;
 
     @Column(nullable = false)
-    private int totalUserCount;
+    private Long totalUserCount;
 
     @Column(nullable = false)
-    private int dailyUserCount;
+    private Long dailyUserCount;
 
     @Column(nullable = false)
-    private int totalStoreCount;
+    private Long totalStoreCount;
 
     @Column(nullable = false)
-    private int dailyNewStoreCount;
+    private Long dailyNewStoreCount;
 
     @Column(nullable = false)
-    private int dailyTotalSales;
+    private Long dailyTotalSales;
 
     @Column(nullable = false, unique = true)
     private LocalDate statisticsDate;
 
     @Builder
     public Dashboard(
-            int totalUserCount,
-            int dailyUserCount,
-            int totalStoreCount,
-            int dailyNewStoreCount,
-            int dailyTotalSales,
+            Long totalUserCount,
+            Long dailyUserCount,
+            Long totalStoreCount,
+            Long dailyNewStoreCount,
+            Long dailyTotalSales,
             LocalDate statisticsDate
     ) {
         this.totalUserCount = totalUserCount;
