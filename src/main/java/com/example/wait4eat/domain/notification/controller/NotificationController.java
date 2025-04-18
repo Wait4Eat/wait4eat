@@ -45,11 +45,12 @@ public class NotificationController {
     @GetMapping("/api/v1/notifications")
     public ResponseEntity<PageResponse<NotificationResponse>> getNotifications(
             @AuthenticationPrincipal AuthUser authUser,
+            @RequestParam(required = false) Boolean isRead,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
         return ResponseEntity.ok(
-                PageResponse.from(notificationService.getNotifications(authUser.getUserId(), pageable))
+                PageResponse.from(notificationService.getNotifications(authUser.getUserId(), isRead, pageable))
         );
     }
 

@@ -36,10 +36,10 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
-    public Page<NotificationResponse> getNotifications(Long userId, Pageable pageable) {
+    public Page<NotificationResponse> getNotifications(Long userId, Boolean isRead, Pageable pageable) {
         User user = getUserById(userId);
 
-        return notificationRepository.findAllByUser(user, pageable)
+        return notificationRepository.findAllByUserAndOptionalIsRead(user, isRead, pageable)
                 .map(NotificationResponse::from);
     }
 
