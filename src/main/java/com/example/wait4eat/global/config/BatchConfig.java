@@ -1,9 +1,11 @@
 package com.example.wait4eat.global.config;
 
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
+import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
 import com.example.wait4eat.domain.dashboard.repository.DashboardRepository;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.repository.PopularStoreRepository;
+import com.example.wait4eat.domain.dashboard.repository.StoreSalesRankRepository;
 import com.example.wait4eat.domain.payment.repository.PaymentRepository;
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
@@ -40,12 +42,14 @@ public class BatchConfig {
     private final WaitingRepository waitingRepository;
     private final DashboardRepository dashboardRepository;
     private final PopularStoreRepository popularStoreRepository;
+    private final StoreSalesRankRepository storeSalesRankRepository;
 
     @Bean
     public Job dailyStatisticsJob() {
         return new JobBuilder("dailyStatisticsJob", jobRepository)
                 .start(updateDashboardStep())
                 .next(updatePopularStoreStep())
+                .next(updateStoreSalesRankStep())
                 .build();
     }
 
@@ -56,11 +60,21 @@ public class BatchConfig {
                 .build();
     }
 
-    @Bean Step updatePopularStoreStep() {
+    @Bean
+    public Step updatePopularStoreStep() {
         return new StepBuilder("updatePopularStoreStep", jobRepository)
                 .tasklet(popularStoreUpdateTasklet(), transactionManager)
                 .build();
     }
+
+    @Bean
+    public Step updateStoreSalesRankStep() {
+        return new StepBuilder("updateStoreSalesRankStep", jobRepository)
+                .tasklet(storeSalesRankUpdateTasklet(), transactionManager)
+                .build();
+    }
+
+
 
     @Bean
     public Tasklet dashboardUpdateTasklet() {
@@ -114,6 +128,34 @@ public class BatchConfig {
             }
 
             popularStoreRepository.saveAll(popularStores);
+            return RepeatStatus.FINISHED;
+        };
+    }
+
+    @Bean
+    public Tasklet storeSalesRankUpdateTasklet() {
+        return (contribution, chunkContext) -> {
+            LocalDate yesterday = LocalDate.now().minusDays(1);
+            List<Store> stores = storeRepository.findAll();
+            Dashboard findDashboard = dashboardRepository.findByStatisticsDateOrElseThrow(yesterday);
+
+            List<StoreSalesRank> storeSalesRanks = new ArrayList<>();
+            for (int i = 0; i <stores.size(); i++) {
+                Store store = stores.get(i);
+                Long totalSales = paymentRepository.sumSalesByStoreAndDate(store, yesterday);
+
+                StoreSalesRank storeSalesRank = StoreSalesRank.builder()
+                        .storeId(store.getId())
+                        .storeName(store.getName())
+                        .totalSales(totalSales)
+                        .ranking(i+1)
+                        .dashboard(findDashboard)
+                        .build();
+
+                storeSalesRanks.add(storeSalesRank);
+            }
+
+            storeSalesRankRepository.saveAll(storeSalesRanks);
             return RepeatStatus.FINISHED;
         };
     }
