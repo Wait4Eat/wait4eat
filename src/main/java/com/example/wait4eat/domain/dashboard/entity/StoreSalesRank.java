@@ -28,18 +28,18 @@ public class StoreSalesRank {
     private int totalSales;
 
     @Column(nullable = false)
-    private int rank;
+    private int ranking;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dashboard_id", nullable = false)
     private Dashboard dashboard;
 
     @Builder
-    public StoreSalesRank(Long storeId, String storeName, int totalSales, int rank, Dashboard dashboard) {
+    public StoreSalesRank(Long storeId, String storeName, int totalSales, int ranking, Dashboard dashboard) {
         this.storeId = storeId;
         this.storeName = storeName;
         this.totalSales = totalSales;
-        this.rank = rank;
+        this.ranking = ranking;
         this.dashboard = dashboard;
     }
 }
