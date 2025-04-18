@@ -1,6 +1,7 @@
 package com.example.wait4eat.domain.store.dto.response;
 
 import com.example.wait4eat.domain.store.entity.Store;
+import com.example.wait4eat.domain.store.entity.StoreDocument;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -41,6 +42,18 @@ public class GetStoreListResponse {
                 .openTime(store.getOpenTime())
                 .closeTime(store.getCloseTime())
                 .depositAmount(store.getDepositAmount())
+                .build();
+    }
+
+    public static GetStoreListResponse from(StoreDocument storeDocument) {
+        return GetStoreListResponse.builder()
+                .id(storeDocument.getId())
+                .name(storeDocument.getName())
+                .address(storeDocument.getAddress())
+                .openTime(LocalTime.parse(storeDocument.getOpenTime()))
+                .closeTime(LocalTime.parse(storeDocument.getCloseTime()))
+                .depositAmount(storeDocument.getDepositAmount())
+                .waitingTeamCount(storeDocument.getWaitingTeamCount())
                 .build();
     }
 }
