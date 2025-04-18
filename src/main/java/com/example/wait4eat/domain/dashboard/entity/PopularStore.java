@@ -29,13 +29,7 @@ public class PopularStore {
     private int waitingCount;
 
     @Column(nullable = false)
-    private int reviewCount;
-
-    @Column(nullable = false)
-    private int rank;
-
-    @Column(nullable = false)
-    private PopularityType type;
+    private int ranking;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dashboard_id", nullable = false)
@@ -46,17 +40,14 @@ public class PopularStore {
             Long storeId,
             String storeName,
             int waitingCount,
-            int reviewCount,
-            int rank,
+            int ranking,
             PopularityType type,
             Dashboard dashboard
     ) {
         this.storeId = storeId;
         this.storeName = storeName;
         this.waitingCount = waitingCount;
-        this.reviewCount = reviewCount;
-        this.rank = rank;
-        this.type = type;
+        this.ranking = ranking;
         this.dashboard = dashboard;
     }
 }
