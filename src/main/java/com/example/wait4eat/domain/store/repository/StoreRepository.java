@@ -12,10 +12,12 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalTime;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
-
 import java.util.Optional;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public interface StoreRepository extends JpaRepository<Store, Long> {
     boolean existsByUserId (Long userId);
@@ -66,4 +68,14 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     Optional<Store> findByIdWithPessimisticLock(Long storeId);
 
     Long countByCreatedAt(LocalDate yesterday);
+
+    @Query("""
+    SELECT s
+    FROM Store s
+    JOIN Waiting w ON w.store = s
+    WHERE w.createdAt BETWEEN :startOfDay AND :endOfDay
+    GROUP BY s.id
+    ORDER BY COUNT(w.id) DESC
+    """)
+    List<Store> findTop10StoresByWaitingCount(@Param("startOfDay") LocalDateTime start, @Param("endOfDay") LocalDateTime end);
 }
