@@ -22,7 +22,8 @@ public class WaitingCalledEventHandler {
     public void handle(WaitingCalledEvent event) {
         Notification notification = notificationService.create(
                 event.getUserId(),
-                NotificationType.WAITING_CALLED
+                NotificationType.WAITING_CALLED,
+                NotificationType.WAITING_CALLED.getMessage()
         );
         eventPublisher.publishEvent(NotificationEvent.from(notification));
     }

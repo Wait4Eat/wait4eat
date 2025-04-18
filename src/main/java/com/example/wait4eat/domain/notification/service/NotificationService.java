@@ -23,14 +23,14 @@ public class NotificationService {
     private final UserRepository userRepository;
 
     @Transactional
-    public Notification create(Long userId, NotificationType notificationType) {
+    public Notification create(Long userId, NotificationType notificationType, String message) {
         User user =  getUserById(userId);
 
         return notificationRepository.save(
                 Notification.builder()
                         .user(user)
                         .type(notificationType)
-                        .text(notificationType.getMessage())
+                        .text(message)
                         .build()
         );
     }
