@@ -1,10 +1,7 @@
 package com.example.wait4eat.domain.dashboard.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
@@ -27,6 +24,7 @@ public class StoreSalesRank {
     @Column(nullable = false)
     private Long totalSales;
 
+    @Setter
     @Column(nullable = false)
     private int ranking;
 
