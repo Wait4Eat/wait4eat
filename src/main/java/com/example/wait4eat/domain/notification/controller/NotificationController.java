@@ -15,12 +15,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -55,5 +51,14 @@ public class NotificationController {
         return ResponseEntity.ok(
                 PageResponse.from(notificationService.getNotifications(authUser.getUserId(), pageable))
         );
+    }
+
+    @PatchMapping("/api/v1/notifications/{notificationId}")
+    public ResponseEntity<SuccessResponse> markAsRead(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long notificationId
+    ) {
+        notificationService.markAsRead(authUser.getUserId(), notificationId);
+        return ResponseEntity.ok(SuccessResponse.from(notificationId));
     }
 }
