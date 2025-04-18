@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalTime;
 
@@ -16,7 +17,11 @@ public class SearchStoreRequest {
     private String name; // 가게 이름 (like 검색)
     private String address; // 주소 (like 검색)
     private String description; // 설명 (like 검색)
+
+    @DateTimeFormat(pattern = "HH:mm")
     private LocalTime openTime; // 오픈 시간 (필터링)
+
+    @DateTimeFormat(pattern = "HH:mm")
     private LocalTime closeTime; // 마감 시간 (필터링)
 
     // 페이징 정보

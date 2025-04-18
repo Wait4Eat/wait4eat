@@ -14,6 +14,7 @@ import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.elasticsearch.core.query.Query;
 
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
 @Repository
@@ -28,6 +29,7 @@ public class StoreSearchRepositoryImpl implements StoreSearchRepositoryCustom {
     @Override
     public Page<StoreDocument> searchStores(SearchStoreRequest request, Pageable pageable) {
         Criteria criteria = new Criteria();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
 
         if (request.getName() != null && !request.getName().isEmpty()) {
             criteria.and(new Criteria("name").matches(request.getName()));
@@ -39,10 +41,12 @@ public class StoreSearchRepositoryImpl implements StoreSearchRepositoryCustom {
             criteria.and(new Criteria("description").matches(request.getDescription()));
         }
         if (request.getOpenTime() != null) {
-            criteria.and(new Criteria("openTime").greaterThanEqual(request.getOpenTime()));
+            String openTimeStr = request.getOpenTime().format(formatter);
+            criteria.and(new Criteria("openTime").greaterThanEqual(openTimeStr));
         }
         if (request.getCloseTime() != null) {
-            criteria.and(new Criteria("closeTime").lessThanEqual(request.getCloseTime()));
+            String closeTimeStr = request.getCloseTime().format(formatter);
+            criteria.and(new Criteria("closeTime").lessThanEqual(closeTimeStr));
         }
 
         Query query = new CriteriaQuery(criteria)
