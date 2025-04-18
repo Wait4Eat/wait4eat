@@ -1,10 +1,14 @@
 package com.example.wait4eat.global.config;
 
+import com.example.wait4eat.domain.dashboard.entity.PopularStore;
 import com.example.wait4eat.domain.dashboard.repository.DashboardRepository;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
+import com.example.wait4eat.domain.dashboard.repository.PopularStoreRepository;
 import com.example.wait4eat.domain.payment.repository.PaymentRepository;
+import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
 import com.example.wait4eat.domain.user.repository.UserRepository;
+import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -19,6 +23,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Configuration
 @EnableBatchProcessing
@@ -29,12 +37,15 @@ public class BatchConfig {
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
     private final PaymentRepository paymentRepository;
+    private final WaitingRepository waitingRepository;
     private final DashboardRepository dashboardRepository;
+    private final PopularStoreRepository popularStoreRepository;
 
     @Bean
-    public Job deshboardUpdateJob() {
-        return new JobBuilder("dashboardUpdateJob", jobRepository)
+    public Job dailyStatisticsJob() {
+        return new JobBuilder("dailyStatisticsJob", jobRepository)
                 .start(updateDashboardStep())
+                .next(updatePopularStoreStep())
                 .build();
     }
 
@@ -42,6 +53,12 @@ public class BatchConfig {
     public Step updateDashboardStep() {
         return new StepBuilder("updateDashboardStep", jobRepository)
                 .tasklet(dashboardUpdateTasklet(), transactionManager)
+                .build();
+    }
+
+    @Bean Step updatePopularStoreStep() {
+        return new StepBuilder("updatePopularStoreStep", jobRepository)
+                .tasklet(popularStoreUpdateTasklet(), transactionManager)
                 .build();
     }
 
@@ -66,6 +83,37 @@ public class BatchConfig {
                     .build();
 
             dashboardRepository.save(dashboard);
+            return RepeatStatus.FINISHED;
+        };
+    }
+
+    @Bean
+    public Tasklet popularStoreUpdateTasklet() {
+        return (contribution, chunkContext) -> {
+            LocalDate yesterday = LocalDate.now().minusDays(1);
+            LocalDateTime startOfDay = yesterday.atStartOfDay();
+            LocalDateTime endOfDay = yesterday.atTime(LocalTime.MAX);
+
+            List<Store> storeList = storeRepository.findTop10StoresByWaitingCount(startOfDay, endOfDay);
+            Dashboard findDashboard = dashboardRepository.findByStatisticsDateOrElseThrow(yesterday);
+            List<PopularStore> popularStores = new ArrayList<>();
+
+            for (int i = 0; i < storeList.size(); i++) {
+                Store store = storeList.get(i);
+                int waitingCount = waitingRepository.countByStoreAndCreatedAtBetween(store, startOfDay, endOfDay);
+
+                PopularStore popularStore = PopularStore.builder()
+                        .storeId(store.getId())
+                        .storeName(store.getName())
+                        .waitingCount(waitingCount)
+                        .ranking(i+1)
+                        .dashboard(findDashboard)
+                        .build();
+
+                popularStores.add(popularStore);
+            }
+
+            popularStoreRepository.saveAll(popularStores);
             return RepeatStatus.FINISHED;
         };
     }

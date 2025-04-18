@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DashboardScheduler {
     private final JobLauncher jobLauncher;
-    private final Job dashboardUpdateJob;
+    private final Job dailyStatisticsJob;
 
     @Scheduled(cron = "0 0 1 * * *") // 매일 새벽 1시 실행
     public void runDailyDashboardJob() {
@@ -23,7 +23,7 @@ public class DashboardScheduler {
                     .addLong("time", System.currentTimeMillis())
                     .toJobParameters();
 
-            jobLauncher.run(dashboardUpdateJob, jobParameters);
+            jobLauncher.run(dailyStatisticsJob, jobParameters);
             log.info("대시보드 배치 실행 완료");
         } catch (Exception e) {
             log.error("대시보드 배치 실행 실패", e);
