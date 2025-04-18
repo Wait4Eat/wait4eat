@@ -68,6 +68,9 @@ public enum ExceptionType {
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 리뷰를 찾을 수 없습니다."),
     ALREADY_REVIEW_EXISTS(HttpStatus.CONFLICT, "이미 리뷰를 작성하였습니다."),
 
+    // Notification
+    NOTIFICATION_NOT_FOUND(HttpStatus.BAD_REQUEST, "해당 알림을 찾을 수 없습니다."),
+
     // File
     FILE_LIST_EMPTY(HttpStatus.BAD_REQUEST, "업로드할 파일을 1개 이상 첨부해주세요."),
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),

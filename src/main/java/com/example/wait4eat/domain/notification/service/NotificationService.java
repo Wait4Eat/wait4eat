@@ -43,10 +43,27 @@ public class NotificationService {
                 .map(NotificationResponse::from);
     }
 
+    @Transactional
+    public void markAsRead(Long userId, Long notificationId) {
+        Notification notification = getNotificationById(notificationId);
+        validateNotificationBelongsToUser(notification, userId);
+        notification.markAsRead();
+    }
+
+    private void validateNotificationBelongsToUser(Notification notification, Long userId) {
+        if (!notification.getUser().getId().equals(userId)) {
+            throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
+        }
+    }
+
     private User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ExceptionType.USER_NOT_FOUND));
     }
 
+    private Notification getNotificationById(Long notificationId) {
+        return notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new CustomException(ExceptionType.NOTIFICATION_NOT_FOUND));
+    }
 
 }
