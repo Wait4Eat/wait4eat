@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Configuration
@@ -140,19 +141,25 @@ public class BatchConfig {
             Dashboard findDashboard = dashboardRepository.findByStatisticsDateOrElseThrow(yesterday);
 
             List<StoreSalesRank> storeSalesRanks = new ArrayList<>();
-            for (int i = 0; i <stores.size(); i++) {
-                Store store = stores.get(i);
+            for (Store store : stores) {
                 Long totalSales = paymentRepository.sumSalesByStoreAndDate(store, yesterday);
 
                 StoreSalesRank storeSalesRank = StoreSalesRank.builder()
                         .storeId(store.getId())
                         .storeName(store.getName())
                         .totalSales(totalSales)
-                        .ranking(i+1)
                         .dashboard(findDashboard)
                         .build();
 
                 storeSalesRanks.add(storeSalesRank);
+            }
+
+            storeSalesRanks.sort(Comparator.comparing(StoreSalesRank::getTotalSales).reversed());
+
+            for(int j = 0; j < storeSalesRanks.size(); j++) {
+                StoreSalesRank storeSalesRank = storeSalesRanks.get(j);
+
+                storeSalesRank.setRanking(j+1);
             }
 
             storeSalesRankRepository.saveAll(storeSalesRanks);
