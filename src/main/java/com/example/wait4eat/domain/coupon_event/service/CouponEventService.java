@@ -4,6 +4,7 @@ import com.example.wait4eat.domain.coupon_event.dto.request.CreateCouponEventReq
 import com.example.wait4eat.domain.coupon_event.dto.response.CreateCouponEventResponse;
 import com.example.wait4eat.domain.coupon_event.dto.response.GetCouponEventResponse;
 import com.example.wait4eat.domain.coupon_event.entity.CouponEvent;
+import com.example.wait4eat.domain.coupon_event.event.CouponEventLaunchedEvent;
 import com.example.wait4eat.domain.coupon_event.repository.CouponEventRepository;
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
@@ -11,6 +12,7 @@ import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ public class CouponEventService {
 
     private final CouponEventRepository couponEventRepository;
     private final StoreRepository storeRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public CreateCouponEventResponse createCouponEvent(
@@ -53,6 +56,8 @@ public class CouponEventService {
                 .build();
 
         CouponEvent savedCouponEvent = couponEventRepository.save(couponEvent);
+
+        eventPublisher.publishEvent(CouponEventLaunchedEvent.of(store, savedCouponEvent));
 
         return CreateCouponEventResponse.from(savedCouponEvent);
     }
