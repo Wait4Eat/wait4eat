@@ -44,6 +44,13 @@ public class StoreController {
         return ResponseEntity.ok(PageResponse.from(storeService.getStoreList(request)));
     }
 
+    @GetMapping("api/v1/stores/es")
+    public ResponseEntity<PageResponse<GetStoreListResponse>> searchByEs(
+            @ModelAttribute SearchStoreRequest request
+    ) {
+        return ResponseEntity.ok(PageResponse.from(storeService.getStoreListByEs(request)));
+    }
+
     @GetMapping("/api/v1/stores/{storeId}")
     public ResponseEntity<SuccessResponse<GetStoreDetailResponse>> getStoreDetail(
             @PathVariable Long storeId

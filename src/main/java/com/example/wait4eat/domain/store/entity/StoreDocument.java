@@ -6,9 +6,9 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
-import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
-@Document(indexName = "stores_index") // index 이름
+@Document(indexName = "stores") // index 이름
 @Getter
 @Setter
 @NoArgsConstructor
@@ -28,11 +28,11 @@ public class StoreDocument {
     @Field(type = FieldType.Text, analyzer = "korean_nori", searchAnalyzer = "korean_nori")
     private String description;
 
-    @Field(type = FieldType.Keyword, normalizer = "lowercase_normalizer")
-    private LocalTime openTime;
+    @Field(type = FieldType.Keyword)
+    private String openTime;
 
-    @Field(type = FieldType.Keyword, normalizer = "lowercase_normalizer")
-    private LocalTime closeTime;
+    @Field(type = FieldType.Keyword)
+    private String closeTime;
 
     @Field(type = FieldType.Integer)
     private int depositAmount;
@@ -46,8 +46,8 @@ public class StoreDocument {
                 .name(store.getName())
                 .address(store.getAddress())
                 .description(store.getDescription())
-                .openTime(store.getOpenTime())
-                .closeTime(store.getCloseTime())
+                .openTime(store.getOpenTime().format(DateTimeFormatter.ofPattern("HH:mm")))
+                .closeTime(store.getCloseTime().format(DateTimeFormatter.ofPattern("HH:mm")))
                 .depositAmount(store.getDepositAmount())
                 .waitingTeamCount(store.getWaitingTeamCount())
                 .build();

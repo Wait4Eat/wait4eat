@@ -14,6 +14,7 @@ import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +22,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -83,6 +87,23 @@ public class StoreService {
         // 검색 및 필터링 조건 적용
         return storeRepository.searchStores(request, pageable)
                 .map(GetStoreListResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<GetStoreListResponse> getStoreListByEs(SearchStoreRequest request) {
+        Pageable pageable = PageRequest.of(
+                request.getPage(),
+                request.getSize(),
+                Sort.by(
+                        request.getSortDirection().equalsIgnoreCase("asc") ?
+                                Sort.Order.asc(request.getSort()) :
+                                Sort.Order.desc(request.getSort())
+                )
+        );
+
+        Page<StoreDocument> searchResult = storeSearchRepository.searchStores(request, pageable);
+
+        return searchResult.map(GetStoreListResponse::from);
     }
 
     @Transactional(readOnly = true)
