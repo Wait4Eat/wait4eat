@@ -5,6 +5,7 @@ import com.example.wait4eat.domain.store.entity.StoreDocument;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -29,13 +30,13 @@ public class StoreSearchRepositoryImpl implements StoreSearchRepositoryCustom {
         Criteria criteria = new Criteria();
 
         if (request.getName() != null && !request.getName().isEmpty()) {
-            criteria.and(new Criteria("name").contains(request.getName()));
+            criteria.and(new Criteria("name").matches(request.getName()));
         }
         if (request.getAddress() != null && !request.getAddress().isEmpty()) {
-            criteria.and(new Criteria("address").contains(request.getAddress()));
+            criteria.and(new Criteria("address").matches(request.getAddress()));
         }
         if (request.getDescription() != null && !request.getDescription().isEmpty()) {
-            criteria.and(new Criteria("description").contains(request.getDescription()));
+            criteria.and(new Criteria("description").matches(request.getDescription()));
         }
         if (request.getOpenTime() != null) {
             criteria.and(new Criteria("openTime").greaterThanEqual(request.getOpenTime()));
@@ -44,7 +45,9 @@ public class StoreSearchRepositoryImpl implements StoreSearchRepositoryCustom {
             criteria.and(new Criteria("closeTime").lessThanEqual(request.getCloseTime()));
         }
 
-        Query query = new CriteriaQuery(criteria).setPageable(pageable);
+        Query query = new CriteriaQuery(criteria)
+                .setPageable(pageable)
+                .addSort(Sort.by(Sort.Order.desc("_score"))); // 점수 내림차순 정렬 추가
 
         SearchHits<StoreDocument> searchHits = elasticsearchOperations.search(query, StoreDocument.class);
         return new PageImpl<>(
