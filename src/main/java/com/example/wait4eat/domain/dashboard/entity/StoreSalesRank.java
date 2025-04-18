@@ -25,7 +25,7 @@ public class StoreSalesRank {
     private String storeName;
 
     @Column(nullable = false)
-    private int totalSales;
+    private Long totalSales;
 
     @Column(nullable = false)
     private int ranking;
@@ -35,7 +35,7 @@ public class StoreSalesRank {
     private Dashboard dashboard;
 
     @Builder
-    public StoreSalesRank(Long storeId, String storeName, int totalSales, int ranking, Dashboard dashboard) {
+    public StoreSalesRank(Long storeId, String storeName, Long totalSales, int ranking, Dashboard dashboard) {
         this.storeId = storeId;
         this.storeName = storeName;
         this.totalSales = totalSales;
