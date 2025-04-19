@@ -24,8 +24,20 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
             "WHERE (:name IS NULL OR s.name LIKE %:name%) " +
             "AND (:address IS NULL OR s.address LIKE %:address%) " +
             "AND (:description IS NULL OR s.description LIKE %:description%) " +
-            "AND (:openTime IS NULL OR s.openTime >= :openTime) " +
-            "AND (:closeTime IS NULL OR s.closeTime <= :closeTime)")
+            "AND (" +
+            "    (:openTime IS NULL AND :closeTime IS NULL) OR " +
+            "    (" +
+            "        s.openTime < s.closeTime AND " +
+            "        (:openTime IS NULL OR s.openTime <= :openTime) AND " +
+            "        (:closeTime IS NULL OR s.closeTime >= :closeTime)" +
+            "    ) OR (" +
+            "        s.openTime > s.closeTime AND " +
+            "        (" +
+            "            (:openTime IS NULL OR s.openTime <= :openTime) OR " +
+            "            (:closeTime IS NULL OR s.closeTime >= :closeTime)" +
+            "        )" +
+            "    )" +
+            ")")
     Page<Store> searchStores(
             @Param("name") String name,
             @Param("address") String address,
