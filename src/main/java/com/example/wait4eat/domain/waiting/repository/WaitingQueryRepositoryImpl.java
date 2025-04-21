@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -26,10 +27,18 @@ import static com.example.wait4eat.domain.waiting.entity.QWaiting.waiting;
 public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
     private final JPAQueryFactory queryFactory;
+    private final RedisTemplate<String, Long> waitingIdRedisTemplate; // Long 타입 RedisTemplate
+    private static final String WAITING_QUEUE_KEY_PREFIX = "waiting:queue:store:";
 
     @Override
     // 특정 가게의 주어진 상태에 해당하는 웨이팅 수 조회
     public int countByStoreIdAndStatus(Long storeId, WaitingStatus status) {
+        // WAITING 상태에 대한 카운트는 Sorted Set의 크기
+        if (status == WaitingStatus.WAITING) {
+            Long size = waitingIdRedisTemplate.opsForZSet().zCard(WAITING_QUEUE_KEY_PREFIX + storeId);
+            return size != null ? size.intValue() : 0;
+        }
+        // 다른 상태에 대한 카운트는 DB에서 조회
         Integer count = queryFactory
                 .select(waiting.count().intValue())
                 .from(waiting)
@@ -74,7 +83,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .where(waiting.id.in(waitingIds))
                 .fetch();
 
-        // 추가: waitingTeamCount 구하기
+        // 제트셋 크기 활용하여 waitingTeamCount 구하기
         int currentWaitingTeamCount = countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
 
         // 3. 조회된 Waiting 엔티티 리스트를 WaitingResponse로 변환
@@ -102,7 +111,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                         .and(waiting.status.in(WaitingStatus.REQUESTED, WaitingStatus.WAITING, WaitingStatus.CALLED)))
                 .fetchOne();
 
-        // 추가: waitingTeamCount 구하기
+        // 제트셋 크기 활용하여 waitingTeamCount 구하기
         if (waitingResult != null) {
             Long storeId = waitingResult.getStore().getId(); // waitingResult에서 storeId를 가져옴
             int currentWaitingTeamCount = countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
