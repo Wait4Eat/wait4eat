@@ -37,7 +37,9 @@ public class WaitingServiceImpl implements WaitingService {
     private final RedisTemplate<String, String> redisTemplate;
     private final ApplicationEventPublisher applicationEventPublisher;
 
-    private static final String WAITING_QUEUE_PREFIX = "waiting:store:";
+    private final RedisTemplate<String, Long> waitingIdRedisTemplate; // Long 타입 RedisTemplate
+    private static final String WAITING_QUEUE_KEY_PREFIX = "waiting:queue:store:";
+
 
     // 웨이팅 상태 순서 정의
     private static final List<WaitingStatus> statusOrder = List.of(
@@ -108,7 +110,7 @@ public class WaitingServiceImpl implements WaitingService {
         return waitingRepository.findMyPastWaitings(userId, pageable);
     }
 
-    // 사용자가 웨이팅 취소
+    // 사용자의 웨이팅 취소
     @Override
     @Transactional
     public CancelWaitingResponse cancelMyWaiting(Long userId, Long waitingId) {
@@ -145,6 +147,7 @@ public class WaitingServiceImpl implements WaitingService {
     }
 
     @Override
+    @Transactional
     public boolean updateWaiting(WaitingStatus newStatus, Waiting waiting) {
         WaitingStatus currentStatus = waiting.getStatus();
 
@@ -197,78 +200,80 @@ public class WaitingServiceImpl implements WaitingService {
         return updated;
     }
 
-    // REQUESTED -> WAITING: 가게 웨이팅 팀 수 증가, 호출된 사용자의 웨이팅 순서 +1
+    // REQUESTED -> WAITING: 가게 웨이팅 팀 수 증가, 호출된 사용자의 웨이팅 순서 + 1, 레디스 제트셋에 추가
     private void handleWaiting(Waiting waiting) {
+        Long storeId = waiting.getStore().getId();
         waiting.waiting(getCurrentTime());
-        reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
-        int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
-        log.info("가게 {} 웨이팅 팀 수 증가: {}", waiting.getStore().getId(), currentCount);
+        waitingRepository.save(waiting);
+        waitingIdRedisTemplate.opsForZSet().add(
+                WAITING_QUEUE_KEY_PREFIX + storeId,
+                waiting.getId(),
+                System.currentTimeMillis()
+        ); // 레디스에 웨이팅 ID 저장
+        Long waitingOrder = waitingIdRedisTemplate.opsForZSet().rank(WAITING_QUEUE_KEY_PREFIX + storeId, waiting.getId());
+        if (waitingOrder != null) {
+            waiting.myWaitingOrder(waitingOrder.intValue() + 1); // 순위는 0부터 시작하므로 +1
+            waitingRepository.save(waiting);                     // myWaitingOrder 업데이트 후 저장
+        }
+        log.info("가게 {} 웨이팅 팀 추가됨: {}", storeId, waiting.getId());
     }
 
-    // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0
+    // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0, 레디스 제트셋에서 제거
     private void handleCalled(Waiting waiting) {
+        Long storeId = waiting.getStore().getId();
         waiting.call(getCurrentTime());
         waiting.markAsCalled();
-        reorderWaitingQueue(waiting.getStore().getId());
         int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
         log.info("가게 {} 웨이팅 팀 호출됨. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
 
         applicationEventPublisher.publishEvent(WaitingCalledEvent.from(waiting));
+
+        waitingRepository.save(waiting);
+        waitingIdRedisTemplate.opsForZSet().remove(WAITING_QUEUE_KEY_PREFIX + storeId, waiting.getId());
+        log.info("가게 {} 웨이팅 팀 호출됨: {}", storeId, waiting.getId());
     }
 
-    // REQUESTED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지
+    // REQUESTED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지, 레디스에 영향 없음
     private void handleRequestedToCancelled(Waiting waiting) {
+        Long storeId = waiting.getStore().getId();
         waiting.cancel(getCurrentTime());
-        log.info("가게 {} 결제 전 웨이팅 요청 취소됨. 웨이팅 ID: {}", waiting.getStore().getId(), waiting.getId());
+        waitingRepository.save(waiting);
+        log.info("가게 {} 웨이팅 요청 취소됨 (결제 전): {}", storeId, waiting.getId());
     }
 
-    // WAITING -> CANCELLED: 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지
+    // WAITING -> CANCELLED: 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지, 레디스 제트셋에서 제거
     private void handleWaitingToCancelled(Waiting waiting) {
+        Long storeId = waiting.getStore().getId();
         waiting.cancel(getCurrentTime());
-        reorderWaitingQueue(waiting.getStore().getId());
-        int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
-        log.info("가게 {} 대기 중인 웨이팅 취소됨. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
+        waitingRepository.save(waiting);
+        waitingIdRedisTemplate.opsForZSet().remove(WAITING_QUEUE_KEY_PREFIX + storeId, waiting.getId());
+        log.info("가게 {} 웨이팅 취소됨 (대기 중): {}", storeId, waiting.getId());
     }
 
-    // CALLED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지
+    // CALLED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서, 유지 레디스에 영향 없음
     private void handleCalledToCancelled(Waiting waiting) {
+        Long storeId = waiting.getStore().getId();
         waiting.cancel(getCurrentTime());
-        reorderWaitingQueue(waiting.getStore().getId());
-        int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
-        log.info("가게 {} 호출된 웨이팅 취소됨. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
+        waitingRepository.save(waiting);
+        log.info("가게 {} 웨이팅 취소됨 (호출 상태): {}", storeId, waiting.getId());
     }
 
-    // CALLED -> COMPLETED: 가게 웨이팅 팀 수 그대로, 입장한 사용자의 웨이팅 순서 0
+    // CALLED -> COMPLETED: 가게 웨이팅 팀 수 그대로, 입장한 사용자의 웨이팅 순서 0, 레디스에 영향 없음
     private void handleCompleted(Waiting waiting) {
+        Long storeId = waiting.getStore().getId();
         waiting.enter(getCurrentTime());
         waiting.markAsCalled();
-        reorderWaitingQueue(waiting.getStore().getId()); // 전체 재정렬 호출
-        int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
-        log.info("가게 {} 호출된 웨이팅 입장 완료. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
+        waitingRepository.save(waiting);
+        log.info("가게 {} 웨이팅 완료됨: {}", storeId, waiting.getId());
+    }
+
+    @Override
+    public int getCurrentWaitingTeamCount(Long storeId) {
+        Long size = waitingIdRedisTemplate.opsForZSet().zCard(WAITING_QUEUE_KEY_PREFIX + storeId);
+        return size != null ? size.intValue() : 0;
     }
 
     private LocalDateTime getCurrentTime() {
         return LocalDateTime.now();
-    }
-
-    private void updateWaitingOrder(Long waitingId, int newOrder) {
-        waitingRepository.findById(waitingId)
-                .ifPresent(waiting -> waiting.myWaitingOrder(newOrder));
-    }
-
-    // 사용자의 웨이팅 번호
-    private void reorderWaitingQueue(Long storeId) {
-        List<Waiting> waitingList = waitingRepository.findByStoreIdAndStatusOrderByActivatedAtAsc(storeId, WaitingStatus.WAITING);
-        int order = 1;
-        for (Waiting waiting : waitingList) {
-            updateWaitingOrder(waiting.getId(), order++);
-        }
-        waitingRepository.saveAll(waitingList);
-    }
-
-    // 특정 가게의 현재 웨이팅 팀 수를 계산하는 메서드
-    @Override
-    public int getCurrentWaitingTeamCount(Long storeId) {
-        return waitingRepository.countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
     }
 }
