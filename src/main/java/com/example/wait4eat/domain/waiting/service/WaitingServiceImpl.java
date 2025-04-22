@@ -21,11 +21,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -176,7 +179,7 @@ public class WaitingServiceImpl implements WaitingService {
             updated = true;
         }
 
-        // 사장님 웨이팅 개별 취소 (WAITING -> CANCELLED)
+        // 사장님 웨이팅 개별 취소 (WAITING -> CANCELLED) & 유저가 본인 웨이팅 취소
         else if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.WAITING && canAdvance) {
             handleWaitingToCancelled(waiting);
             updated = true;
@@ -206,23 +209,46 @@ public class WaitingServiceImpl implements WaitingService {
     private void handleWaiting(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
         waiting.waiting(getCurrentTime());
-        waitingRepository.save(waiting);
+        waitingRepository.save(waiting);  // 현재 상태를 먼저 저장
+
+        // 현재 대기열에서 몇 번째인지 Redis에서 순위 조회
+        Long waitingOrder = waitingIdRedisTemplate.opsForZSet().rank(WAITING_QUEUE_KEY_PREFIX + storeId, waiting.getId());
+        if (waitingOrder != null) {
+            int order = waitingOrder.intValue() + 1;  // 순위는 0부터 시작하므로 +1
+            waiting.myWaitingOrder(order);
+            waitingRepository.save(waiting);  // myWaitingOrder 업데이트 후 저장
+            log.info("가게 {} 웨이팅 팀 추가됨: {} (순서: {})", storeId, waiting.getId(), order);
+        } else {
+            // 순위가 없으면 다른 방식으로 처리 (예: 마지막 순서에서 추가)
+            int lastOrder = getLastOrder(storeId);  // 마지막 순서 가져오기
+            int order = lastOrder + 1;
+            waiting.myWaitingOrder(order);
+            waitingRepository.save(waiting);  // myWaitingOrder 업데이트 후 저장
+            log.info("가게 {} 웨이팅 팀 추가됨: {} (순서: {})", storeId, waiting.getId(), order);
+        }
+
+        // Redis에 myWaitingOrder를 score로 넣어 저장
         waitingIdRedisTemplate.opsForZSet().add(
                 WAITING_QUEUE_KEY_PREFIX + storeId,
                 waiting.getId(),
-                System.currentTimeMillis()
-        ); // 레디스에 웨이팅 ID 저장
-        Long waitingOrder = waitingIdRedisTemplate.opsForZSet().rank(WAITING_QUEUE_KEY_PREFIX + storeId, waiting.getId());
-        if (waitingOrder != null) {
-            waiting.myWaitingOrder(waitingOrder.intValue() + 1); // 순위는 0부터 시작하므로 +1
-            waitingRepository.save(waiting);                     // myWaitingOrder 업데이트 후 저장
-        }
-        log.info("가게 {} 웨이팅 팀 추가됨: {}", storeId, waiting.getId());
+                (double) waiting.getMyWaitingOrder()
+        );
     }
 
-    // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0, 레디스 제트셋에서 제거
+    // 마지막 순서 가져오는 메소드
+    private int getLastOrder(Long storeId) {
+        Set<Long> waitingQueue = waitingIdRedisTemplate.opsForZSet().range(WAITING_QUEUE_KEY_PREFIX + storeId, 0, -1);
+        return (waitingQueue != null && !waitingQueue.isEmpty()) ? waitingQueue.size() : 0;
+    }
+
+    // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0, 레디스 제트셋에서 제거하고 재정렬
     private void handleCalled(Waiting waiting) {
+        validateCanBeCalled(waiting); // 호출 전 유효성 검증
+
         Long storeId = waiting.getStore().getId();
+        Long waitingId = waiting.getId();
+
+        // 상태 변경
         waiting.call(getCurrentTime());
         waiting.markAsCalled();
         int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
@@ -231,8 +257,13 @@ public class WaitingServiceImpl implements WaitingService {
         applicationEventPublisher.publishEvent(WaitingCalledEvent.from(waiting));
 
         waitingRepository.save(waiting);
-        waitingIdRedisTemplate.opsForZSet().remove(WAITING_QUEUE_KEY_PREFIX + storeId, waiting.getId());
-        log.info("가게 {} 웨이팅 팀 호출됨: {}", storeId, waiting.getId());
+
+        // Redis에서 제거
+        waitingIdRedisTemplate.opsForZSet().remove(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId);
+        log.info("가게 {} 웨이팅 팀 호출됨: {}", storeId, waitingId);
+
+        // 뒤에 있는 사람들 순서 재정렬
+        updateWaitingOrdersAfterRemoval(storeId, waiting.getMyWaitingOrder());
     }
 
     // REQUESTED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지, 레디스에 영향 없음
@@ -243,13 +274,21 @@ public class WaitingServiceImpl implements WaitingService {
         log.info("가게 {} 웨이팅 요청 취소됨 (결제 전): {}", storeId, waiting.getId());
     }
 
-    // WAITING -> CANCELLED: 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지, 레디스 제트셋에서 제거
+    // WAITING -> CANCELLED: 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지, 레디스 제트셋에서 제거하고 재정렬
     private void handleWaitingToCancelled(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
+        Long waitingId = waiting.getId();
+
+        // 상태 변경
         waiting.cancel(getCurrentTime());
         waitingRepository.save(waiting);
-        waitingIdRedisTemplate.opsForZSet().remove(WAITING_QUEUE_KEY_PREFIX + storeId, waiting.getId());
-        log.info("가게 {} 웨이팅 취소됨 (대기 중): {}", storeId, waiting.getId());
+
+        // Redis에서 제거
+        waitingIdRedisTemplate.opsForZSet().remove(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId);
+        log.info("가게 {} 웨이팅 취소됨 (대기 중): {}", storeId, waitingId);
+
+        // 뒤에 있는 사람들 순서 재정렬
+        updateWaitingOrdersAfterRemoval(storeId, waiting.getMyWaitingOrder());
     }
 
     // CALLED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서, 유지 레디스에 영향 없음
@@ -267,6 +306,47 @@ public class WaitingServiceImpl implements WaitingService {
         waiting.markAsCalled();
         waitingRepository.save(waiting);
         log.info("가게 {} 웨이팅 완료됨: {}", storeId, waiting.getId());
+    }
+
+    // 호출 전 유효성 체크: handleCalled() 안에서 Redis의 가장 앞 순서인지 검증
+    private void validateCanBeCalled(Waiting waiting) {
+        Long storeId = waiting.getStore().getId();
+        Long waitingId = waiting.getId();
+
+        // Redis에서 가장 앞 순서의 대기 ID 확인
+        Set<Long> first = waitingIdRedisTemplate.opsForZSet()
+                .range(WAITING_QUEUE_KEY_PREFIX + storeId, 0, 0);
+
+        if (first == null || first.isEmpty() || !first.iterator().next().equals(waitingId)) {
+            throw new CustomException(ExceptionType.NOT_FIRST_IN_WAITING_QUEUE);
+        }
+    }
+
+    // 웨이팅 제거 및 순서 재정렬 (WAITING -> CALLED, WAITING -> CANCELLED)
+    private void updateWaitingOrdersAfterRemoval(Long storeId, int removedOrder) {
+        Set<ZSetOperations.TypedTuple<Long>> affected = waitingIdRedisTemplate.opsForZSet()
+                .rangeByScoreWithScores(WAITING_QUEUE_KEY_PREFIX + storeId, removedOrder + 1, Double.MAX_VALUE);
+
+        if (affected != null) {
+            for (ZSetOperations.TypedTuple<Long> tuple : affected) {
+                Long waitingId = tuple.getValue();
+                double currentScore = tuple.getScore();
+
+                // Redis score 감소
+                waitingIdRedisTemplate.opsForZSet().add(
+                        WAITING_QUEUE_KEY_PREFIX + storeId,
+                        waitingId,
+                        currentScore - 1
+                );
+
+                // DB에서도 myWaitingOrder 감소
+                Optional<Waiting> optional = waitingRepository.findById(waitingId);
+                optional.ifPresent(w -> {
+                    w.myWaitingOrder(w.getMyWaitingOrder() - 1);
+                    waitingRepository.save(w);
+                });
+            }
+        }
     }
 
     @Override
