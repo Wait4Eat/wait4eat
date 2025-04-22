@@ -12,6 +12,8 @@ import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
+import jakarta.persistence.LockTimeoutException;
+import jakarta.persistence.PessimisticLockException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,40 +33,43 @@ public class CouponService {
 
     @Transactional
     public CreateCouponResponse createCoupon(AuthUser authUser, Long couponEventId) {
+        try {
+            User user = getUserByAuthUser(authUser);
 
-        User user = getUserByAuthUser(authUser);
+            // 락 걸고 쿠폰 이벤트 조회
+            CouponEvent couponEvent = couponEventRepository.findByIdWithPessimisticLock(couponEventId)
+                    .orElseThrow(() -> new CustomException(ExceptionType.COUPON_EVENT_NOT_FOUND));
 
-        CouponEvent couponEvent = couponEventRepository.findById(couponEventId)
-                .orElseThrow(() -> new CustomException(ExceptionType.COUPON_EVENT_NOT_FOUND));
+            // 중복 발급 검증(쿠폰은 한 번만 받을 수 있음)
+            if (couponRepository.existsByUserIdAndCouponEventId(user.getId(), couponEventId)) {
+                throw new CustomException(ExceptionType.COUPON_ALREADY_EXISTS);
+            }
 
-        // 쿠폰은 1개만 받을 수 있음(이미 받은 쿠폰이 있는지 검증)
-        if (couponRepository.existsByUserIdAndCouponEventId(user.getId(), couponEventId)) {
-            throw new CustomException(ExceptionType.COUPON_ALREADY_EXISTS);
+            // 소진된 쿠폰 검증
+            if (couponEvent.getIssuedQuantity() >= couponEvent.getTotalQuantity()) {
+                throw new CustomException(ExceptionType.COUPON_SOLD_OUT);
+            }
+
+            // 쿠폰이벤트 issuedQuantity 수량 변경
+            couponEvent.increaseIssuedQuantity();
+            couponEventRepository.save(couponEvent);
+
+            Coupon coupon = Coupon.builder()
+                    .user(user)
+                    .couponEvent(couponEvent)
+                    .discountAmount(couponEvent.getDiscountAmount())
+                    .expiresAt(couponEvent.getExpiresAt())
+                    .issuedAt(LocalDateTime.now())
+                    .isUsed(false)
+                    .usedAt(null)
+                    .build();
+
+            Coupon savedCoupon = couponRepository.save(coupon);
+
+            return CreateCouponResponse.from(savedCoupon);
+        } catch (PessimisticLockException | LockTimeoutException e) {
+            throw new CustomException(ExceptionType.DATABASE_LOCK_FAILED);
         }
-
-        // 쿠폰 남은 수량 검증(totalQuantity를 넘지 않게 쿠폰 발행)
-        if (couponEvent.getIssuedQuantity() >= couponEvent.getTotalQuantity()) {
-            throw new CustomException(ExceptionType.COUPON_SOLD_OUT);
-        }
-
-        // 쿠폰이벤트 issuedQuantity 수량 변경
-        couponEvent.increaseIssuedQuantity();
-        couponEventRepository.save(couponEvent);
-
-        Coupon coupon = Coupon.builder()
-                .user(user)
-                .couponEvent(couponEvent)
-                .discountAmount(couponEvent.getDiscountAmount())
-                .expiresAt(couponEvent.getExpiresAt())
-                .issuedAt(LocalDateTime.now())
-                .isUsed(false)
-                .usedAt(null)
-                .build();
-
-        Coupon savedCoupon = couponRepository.save(coupon);
-
-        return CreateCouponResponse.from(savedCoupon);
-
     }
 
     @Transactional(readOnly = true)
