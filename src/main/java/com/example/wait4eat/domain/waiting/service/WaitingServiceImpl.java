@@ -213,32 +213,24 @@ public class WaitingServiceImpl implements WaitingService {
 
         // 현재 대기열에서 몇 번째인지 Redis에서 순위 조회
         Long waitingOrder = waitingIdRedisTemplate.opsForZSet().rank(WAITING_QUEUE_KEY_PREFIX + storeId, waiting.getId());
+        int order;
         if (waitingOrder != null) {
-            int order = waitingOrder.intValue() + 1;  // 순위는 0부터 시작하므로 +1
-            waiting.myWaitingOrder(order);
-            waitingRepository.save(waiting);  // myWaitingOrder 업데이트 후 저장
-            log.info("가게 {} 웨이팅 팀 추가됨: {} (순서: {})", storeId, waiting.getId(), order);
+            order = waitingOrder.intValue() + 1;  // 순위는 0부터 시작하므로 +1
         } else {
-            // 순위가 없으면 다른 방식으로 처리 (예: 마지막 순서에서 추가)
-            int lastOrder = getLastOrder(storeId);  // 마지막 순서 가져오기
-            int order = lastOrder + 1;
+            // 순위가 없으면 마지막 순서 + 1로 설정
+            Set<Long> waitingQueue = waitingIdRedisTemplate.opsForZSet().range(WAITING_QUEUE_KEY_PREFIX + storeId, 0, -1);
+            order = (waitingQueue != null) ? waitingQueue.size() + 1 : 1;
+        }
             waiting.myWaitingOrder(order);
             waitingRepository.save(waiting);  // myWaitingOrder 업데이트 후 저장
             log.info("가게 {} 웨이팅 팀 추가됨: {} (순서: {})", storeId, waiting.getId(), order);
-        }
 
         // Redis에 myWaitingOrder를 score로 넣어 저장
         waitingIdRedisTemplate.opsForZSet().add(
                 WAITING_QUEUE_KEY_PREFIX + storeId,
                 waiting.getId(),
-                (double) waiting.getMyWaitingOrder()
+                waiting.getMyWaitingOrder()
         );
-    }
-
-    // 마지막 순서 가져오는 메소드
-    private int getLastOrder(Long storeId) {
-        Set<Long> waitingQueue = waitingIdRedisTemplate.opsForZSet().range(WAITING_QUEUE_KEY_PREFIX + storeId, 0, -1);
-        return (waitingQueue != null && !waitingQueue.isEmpty()) ? waitingQueue.size() : 0;
     }
 
     // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0, 레디스 제트셋에서 제거하고 재정렬
