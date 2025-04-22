@@ -19,4 +19,6 @@ public interface WaitingQueryRepository {
 
     // 특정 가게의 주어진 상태에 해당하는 웨이팅 수 조회
     int countByStoreIdAndStatus(Long storeId, WaitingStatus status);
+
+    Long getUserWaitingRank(Long storeId, Long waitingId);
 }
