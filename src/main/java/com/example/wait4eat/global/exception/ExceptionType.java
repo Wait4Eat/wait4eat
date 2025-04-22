@@ -58,6 +58,7 @@ public enum ExceptionType {
     ALREADY_FINISHED_WAITING(HttpStatus.BAD_REQUEST, "이미 완료 또는 취소된 웨이팅입니다."),
     SINGLE_WAIT_ALLOWED(HttpStatus.BAD_REQUEST, "한 번에 하나의 웨이팅만 허용됩니다."),
     NO_PERMISSION_TO_ACCESS_STORE_WAITING(HttpStatus.FORBIDDEN, "해당 가게 웨이팅 조회 권한이 없습니다"),
+    NOT_FIRST_IN_WAITING_QUEUE(HttpStatus.BAD_REQUEST, "현재 대기열에서 첫 번째 웨이팅이 아닙니다"),
 
     // StoreWishlist
     STORE_WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 위시리스트를 찾을 수 없습니다."),
