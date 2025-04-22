@@ -51,14 +51,14 @@ public class MyWaitingResponse {
         this.enteredAt = enteredAt;
     }
 
-    public static MyWaitingResponse of(Waiting waiting, int waitingTeamCount) {
+    public static MyWaitingResponse of(Waiting waiting, int waitingTeamCount, int myWaitingOrder) {
         return MyWaitingResponse.builder()
                 .waitingId(waiting.getId())
                 .storeId(waiting.getStore().getId())
                 .userId(waiting.getUser().getId())
                 .peopleCount(waiting.getPeopleCount())
                 .waitingTeamCount(waitingTeamCount)
-                .myWaitingOrder(waiting.getMyWaitingOrder())
+                .myWaitingOrder(myWaitingOrder)
                 .status(waiting.getStatus())
                 .createdAt(waiting.getCreatedAt())
                 .activatedAt(waiting.getActivatedAt())

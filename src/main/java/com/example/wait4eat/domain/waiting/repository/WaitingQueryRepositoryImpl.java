@@ -52,6 +52,12 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
     }
 
     @Override
+    public Long getUserWaitingRank(Long storeId, Long waitingId) {
+        Long rank = waitingIdRedisTemplate.opsForZSet().rank(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId);
+        return rank != null ? rank + 1 : null;
+    }
+
+    @Override
     public Page<WaitingResponse> findWaitingsByStoreId(Long storeId, WaitingStatus status, Pageable pageable) {
 
         BooleanBuilder builder = new BooleanBuilder();
@@ -111,11 +117,16 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                         .and(waiting.status.in(WaitingStatus.REQUESTED, WaitingStatus.WAITING, WaitingStatus.CALLED)))
                 .fetchOne();
 
-        // 제트셋 크기 활용하여 waitingTeamCount 구하기
+        // Redis ZSet: Size -> waitingTeamCount, Rank -> myWaitingOrder
         if (waitingResult != null) {
             Long storeId = waitingResult.getStore().getId(); // waitingResult에서 storeId를 가져옴
+            Long waitingId = waitingResult.getId();
+
             int currentWaitingTeamCount = countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
-            return Optional.of(MyWaitingResponse.of(waitingResult, currentWaitingTeamCount));
+            Long rank = getUserWaitingRank(storeId, waitingId);
+            int myWaitingOrder = (rank != null) ? rank.intValue() : -1;
+
+            return Optional.of(MyWaitingResponse.of(waitingResult, currentWaitingTeamCount, myWaitingOrder));
         } else {
             return Optional.empty();
         }
