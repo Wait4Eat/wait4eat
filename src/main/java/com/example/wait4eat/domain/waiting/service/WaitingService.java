@@ -27,6 +27,4 @@ public interface WaitingService {
 
     int getCurrentWaitingTeamCount(Long storeId);
 
-    void cleanupWaitingQueues();
-
 }

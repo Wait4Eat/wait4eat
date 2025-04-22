@@ -18,9 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -305,37 +303,6 @@ public class WaitingServiceImpl implements WaitingService {
 
     private LocalDateTime getCurrentTime() {
         return LocalDateTime.now();
-    }
-
-    public void cleanupWaitingQueues() {
-        log.info("Redis 웨이팅 큐 정리 시작 (Scheduled - SCAN 사용): {}", LocalDateTime.now());
-
-        ScanOptions scanOptions = ScanOptions.scanOptions()
-                .match(WAITING_QUEUE_KEY_PREFIX + "*")
-                .count(100) // 한 번에 가져올 키 개수 (조정 가능)
-                .build();
-
-        Cursor<String> cursor = waitingIdRedisTemplate.scan(scanOptions);
-
-        long deletedCount = 0;
-        while (cursor.hasNext()) {
-            String key = cursor.next();
-            Boolean deleted = waitingIdRedisTemplate.delete(key);
-            if (Boolean.TRUE.equals(deleted)) {
-                deletedCount++;
-                log.info("삭제된 키 (SCAN): {}", key);
-            } else {
-                log.warn("키 삭제 실패 (SCAN): {}", key);
-            }
-        }
-
-        try {
-            cursor.close();
-        } catch (Exception e) {
-            log.error("Cursor close 오류: {}", e.getMessage(), e);
-        }
-
-        log.info("Redis 웨이팅 큐 정리 종료 (Scheduled - SCAN 사용): 총 {}개 키 삭제 시도", deletedCount);
     }
 
 }
