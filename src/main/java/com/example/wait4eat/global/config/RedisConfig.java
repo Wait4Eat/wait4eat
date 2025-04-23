@@ -1,6 +1,6 @@
 package com.example.wait4eat.global.config;
 
-import com.example.wait4eat.domain.notification.subscriber.RedisSubscriber;
+import com.example.wait4eat.infra.redis.subscriber.RedisSubscriber;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
