@@ -15,4 +15,8 @@ public class UpdateWaitingRequest {
     private UpdateWaitingRequest(WaitingStatus status) {
         this.status = status;
     }
+
+    public static UpdateWaitingRequest from(WaitingStatus status) {
+        return new UpdateWaitingRequest(status);
+    }
 }

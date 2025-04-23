@@ -116,8 +116,11 @@ public class WaitingServiceImpl implements WaitingService {
     @Override
     @Transactional
     public CancelWaitingResponse cancelMyWaiting(Long userId, Long waitingId) {
-        Waiting waiting = waitingRepository.findById(waitingId)
+
+        // 비관적 락으로 웨이팅 정보 가져오기
+        Waiting waiting = waitingRepository.findByIdWithPessimisticLock(waitingId)
                 .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
+
 
         if (!waiting.getUser().getId().equals(userId)) {
             throw new CustomException(ExceptionType.UNAUTHORIZED_CANCEL_WAITING);
@@ -135,8 +138,11 @@ public class WaitingServiceImpl implements WaitingService {
     @Override
     @Transactional
     public UpdateWaitingResponse updateWaitingStatus(Long userId, Long waitingId, UpdateWaitingRequest updateWaitingRequest) {
-        Waiting waiting = waitingRepository.findById(waitingId)
+
+        // 비관적 락으로 웨이팅 정보 가져오기
+        Waiting waiting = waitingRepository.findByIdWithPessimisticLock(waitingId)
                 .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
+
 
         // 가게 주인 확인 로직
         if (!waiting.getStore().getUser().getId().equals(userId)) {
