@@ -9,11 +9,13 @@ import com.example.wait4eat.domain.waiting.dto.request.UpdateWaitingRequest;
 import com.example.wait4eat.domain.waiting.dto.response.*;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
+import com.example.wait4eat.domain.waiting.event.WaitingCalledEvent;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -33,6 +35,7 @@ public class WaitingServiceImpl implements WaitingService {
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
     private final RedisTemplate<String, String> redisTemplate;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     private static final String WAITING_QUEUE_PREFIX = "waiting:store:";
 
@@ -209,6 +212,8 @@ public class WaitingServiceImpl implements WaitingService {
         reorderWaitingQueue(waiting.getStore().getId());
         int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
         log.info("가게 {} 웨이팅 팀 호출됨. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
+
+        applicationEventPublisher.publishEvent(WaitingCalledEvent.from(waiting));
     }
 
     // REQUESTED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지
