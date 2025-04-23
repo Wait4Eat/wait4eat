@@ -2,6 +2,7 @@ package com.example.wait4eat.domain.notification.entity;
 
 import com.example.wait4eat.domain.notification.enums.NotificationType;
 import com.example.wait4eat.domain.user.entity.User;
+import com.example.wait4eat.global.util.IdGenerator;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -20,7 +21,6 @@ import java.time.LocalDateTime;
 public class Notification {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -41,6 +41,7 @@ public class Notification {
 
     @Builder
     public Notification(User user, NotificationType type, String text) {
+        this.id = IdGenerator.generateNotificationId();
         this.user = user;
         this.type = type;
         this.text = text;
