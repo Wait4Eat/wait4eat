@@ -1,6 +1,5 @@
-package com.example.wait4eat.domain.notification.sse;
+package com.example.wait4eat.infra.sse;
 
-import com.example.wait4eat.domain.notification.event.NotificationEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -29,13 +28,13 @@ public class SseEmitterManager {
         return emitter;
     }
 
-    public void send(Long userId, NotificationEvent event) {
+    public void send(Long userId, String message) {
         SseEmitter emitter = emitterMap.get(userId);
         if (emitter != null) {
             try {
                 emitter.send(SseEmitter.event()
                         .name("notification")
-                        .data(event));
+                        .data(message));
             } catch (IOException e) {
                 log.error("SSE 전송 실패: userId={}", userId, e);
                 emitterMap.remove(userId);
