@@ -208,15 +208,16 @@ public class WaitingServiceImpl implements WaitingService {
         waiting.waiting(getCurrentTime());
         waitingRepository.save(waiting);  // 현재 상태를 먼저 저장
 
-        int currentSize = getCurrentWaitingTeamCount(storeId);
-        log.info("가게 {} 웨이팅 팀 추가됨: {} (현재 대기열 크기: {})", storeId, waiting.getId(), currentSize);
-
         // Redis에 activatedAt을 밀리초로 변환한 값을 score로 넣어 저장
         waitingIdRedisTemplate.opsForZSet().add(
                 WAITING_QUEUE_KEY_PREFIX + storeId,
                 waiting.getId(),
                 waiting.getActivatedAt().toInstant(ZoneOffset.UTC).toEpochMilli()
         );
+
+        int currentSize = waitingRepository.countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
+        // int currentSize = getCurrentWaitingTeamCount(storeId);
+        log.info("가게 {} 웨이팅 팀 추가됨: {} (현재 대기열 크기: {})", storeId, waiting.getId(), currentSize);
     }
 
     // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0, 레디스 제트셋에서 제거하고 재정렬 안해도 됨
