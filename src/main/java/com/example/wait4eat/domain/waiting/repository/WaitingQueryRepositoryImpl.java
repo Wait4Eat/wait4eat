@@ -89,12 +89,9 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .where(waiting.id.in(waitingIds))
                 .fetch();
 
-        // 제트셋 크기 활용하여 waitingTeamCount 구하기
-        int currentWaitingTeamCount = countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
-
         // 3. 조회된 Waiting 엔티티 리스트를 WaitingResponse로 변환
         List<WaitingResponse> content = waitings.stream()
-                .map(waiting -> WaitingResponse.of(waiting, currentWaitingTeamCount))
+                .map(WaitingResponse::from)
                 .collect(Collectors.toList());
 
         // 4. 페이징 처리를 위한 전체 개수 쿼리
