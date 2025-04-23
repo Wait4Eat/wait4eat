@@ -13,6 +13,6 @@ public interface CouponEventRepository extends JpaRepository<CouponEvent, Long> 
 
     // 비관적 락 추가
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select ce from CouponEvent ce where ce.id = :id")
-    Optional<CouponEvent> findByIdWithPessimisticLock(Long id);
+    @Query("select ce from CouponEvent ce where ce.id = :couponEventId")
+    Optional<CouponEvent> findByIdWithPessimisticLock(Long couponEventId);
 }
