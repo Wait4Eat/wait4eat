@@ -6,33 +6,39 @@ import com.example.wait4eat.domain.dashboard.repository.DashboardRepository;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.repository.PopularStoreRepository;
 import com.example.wait4eat.domain.dashboard.repository.StoreSalesRankRepository;
+import com.example.wait4eat.domain.payment.enums.PaymentStatus;
 import com.example.wait4eat.domain.payment.repository.PaymentRepository;
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
+import com.example.wait4eat.domain.user.enums.UserRole;
 import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.lang.NonNull;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Configuration
-@EnableBatchProcessing
 @RequiredArgsConstructor
 public class BatchConfig {
     private final JobRepository jobRepository;
@@ -64,29 +70,31 @@ public class BatchConfig {
     @Bean
     public Step updatePopularStoreStep() {
         return new StepBuilder("updatePopularStoreStep", jobRepository)
-                .tasklet(popularStoreUpdateTasklet(), transactionManager)
+                .<Store, PopularStore>chunk(10, transactionManager)
+                .reader(popularStoreReader())
+                .processor(popularStoreProcessor())
+                .writer(popularStoreWriter())
                 .build();
     }
 
     @Bean
     public Step updateStoreSalesRankStep() {
         return new StepBuilder("updateStoreSalesRankStep", jobRepository)
-                .tasklet(storeSalesRankUpdateTasklet(), transactionManager)
+                .<Store, StoreSalesRank>chunk(1000, transactionManager)
+                .reader(storeSalesRankReader())
+                .processor(storeSalesRankProcessor())
+                .writer(storeSalesRankWriter())
                 .build();
     }
-
-
 
     @Bean
     public Tasklet dashboardUpdateTasklet() {
         return (contribution, chunkContext) -> {
-            LocalDate yesterday = LocalDate.now().minusDays(1);
-
-            Long totalUserCount = userRepository.count();
-            Long dailyUserCount = userRepository.countByLoginDate(yesterday);
+            Long totalUserCount = userRepository.countByRole(UserRole.ROLE_USER);
+            Long dailyUserCount = userRepository.countByLoginDateAndRole(getYesterday(), UserRole.ROLE_USER);
             Long totalStoreCount = storeRepository.count();
-            Long dailyNewStoreCount = storeRepository.countByCreatedAt(yesterday);
-            Long dailyTotalSales = paymentRepository.sumSalesByDate(yesterday);
+            Long dailyNewStoreCount = storeRepository.countByCreatedAtBetween(getStartDate(), getEndDate());
+            Long dailyTotalSales = paymentRepository.sumSalesByDate(getStartDate(), getEndDate(), PaymentStatus.PAID);
 
             Dashboard dashboard = Dashboard.builder()
                     .totalUserCount(totalUserCount)
@@ -94,7 +102,7 @@ public class BatchConfig {
                     .totalStoreCount(totalStoreCount)
                     .dailyNewStoreCount(dailyNewStoreCount)
                     .dailyTotalSales(dailyTotalSales)
-                    .statisticsDate(yesterday)
+                    .statisticsDate(LocalDate.now())
                     .build();
 
             dashboardRepository.save(dashboard);
@@ -103,67 +111,97 @@ public class BatchConfig {
     }
 
     @Bean
-    public Tasklet popularStoreUpdateTasklet() {
-        return (contribution, chunkContext) -> {
-            LocalDate yesterday = LocalDate.now().minusDays(1);
-            LocalDateTime startOfDay = yesterday.atStartOfDay();
-            LocalDateTime endOfDay = yesterday.atTime(LocalTime.MAX);
+    @StepScope
+    public ListItemReader<Store> popularStoreReader() {
+        LocalDateTime startDate = getStartDate();
+        LocalDateTime endDate = getEndDate();
+        List<Store> popularStores = storeRepository.findTop10StoresByWaitingCount(startDate, endDate, PageRequest.of(0, 10));
+        return new ListItemReader<>(popularStores);
+    }
 
-            List<Store> storeList = storeRepository.findTop10StoresByWaitingCount(startOfDay, endOfDay);
-            Dashboard findDashboard = dashboardRepository.findByStatisticsDateOrElseThrow(yesterday);
-            List<PopularStore> popularStores = new ArrayList<>();
+    @Bean
+    @StepScope
+    public ItemProcessor<Store, PopularStore> popularStoreProcessor() {
+        return new ItemProcessor<>() {
+            private int rank = 1;
 
-            for (int i = 0; i < storeList.size(); i++) {
-                Store store = storeList.get(i);
-                int waitingCount = waitingRepository.countByStoreAndCreatedAtBetween(store, startOfDay, endOfDay);
+            @Override
+            public PopularStore process(@NonNull Store store) {
+                int waitingCount = waitingRepository.countByStoreAndCreatedAtBetween(store, getStartDate(), getEndDate());
+                Dashboard dashboard = dashboardRepository.findByStatisticsDateOrElseThrow(getYesterday());
 
-                PopularStore popularStore = PopularStore.builder()
+                return PopularStore.builder()
                         .storeId(store.getId())
                         .storeName(store.getName())
                         .waitingCount(waitingCount)
-                        .ranking(i+1)
-                        .dashboard(findDashboard)
+                        .ranking(rank++)
+                        .dashboard(dashboard)
                         .build();
-
-                popularStores.add(popularStore);
             }
-
-            popularStoreRepository.saveAll(popularStores);
-            return RepeatStatus.FINISHED;
         };
     }
 
     @Bean
-    public Tasklet storeSalesRankUpdateTasklet() {
-        return (contribution, chunkContext) -> {
-            LocalDate yesterday = LocalDate.now().minusDays(1);
-            List<Store> stores = storeRepository.findAll();
-            Dashboard findDashboard = dashboardRepository.findByStatisticsDateOrElseThrow(yesterday);
+    @StepScope
+    public ItemWriter<PopularStore> popularStoreWriter() {
+        return popularStoreRepository::saveAll;
+    }
 
-            List<StoreSalesRank> storeSalesRanks = new ArrayList<>();
-            for (Store store : stores) {
-                Long totalSales = paymentRepository.sumSalesByStoreAndDate(store, yesterday);
+    @Bean
+    @StepScope
+    public ListItemReader<Store> storeSalesRankReader() {
+        List<Store> stores = storeRepository.findAll();
+        return new ListItemReader<>(stores);
+    }
 
-                StoreSalesRank storeSalesRank = StoreSalesRank.builder()
+    @Bean
+    @StepScope
+    public ItemProcessor<Store, StoreSalesRank> storeSalesRankProcessor() {
+        return new ItemProcessor<>() {
+            private final LocalDateTime startDate = getStartDate();
+            private final LocalDateTime endDate = getEndDate();
+
+            @Override
+            public StoreSalesRank process(@NonNull Store store) {
+                Long totalSales = paymentRepository.sumSalesByStoreAndCreatedAtBetween(store, getStartDate(), getEndDate());
+                Dashboard findDashboard = dashboardRepository.findByStatisticsDateOrElseThrow(getYesterday());
+
+                return StoreSalesRank.builder()
                         .storeId(store.getId())
                         .storeName(store.getName())
                         .totalSales(totalSales)
                         .dashboard(findDashboard)
+                        .ranking(0)
                         .build();
-
-                storeSalesRanks.add(storeSalesRank);
             }
-
-            storeSalesRanks.sort(Comparator.comparing(StoreSalesRank::getTotalSales).reversed());
-
-            for(int j = 0; j < storeSalesRanks.size(); j++) {
-                StoreSalesRank storeSalesRank = storeSalesRanks.get(j);
-
-                storeSalesRank.setRanking(j+1);
-            }
-
-            storeSalesRankRepository.saveAll(storeSalesRanks);
-            return RepeatStatus.FINISHED;
         };
+    }
+
+    @Bean
+    @StepScope
+    public ItemWriter<StoreSalesRank> storeSalesRankWriter() {
+        return items -> {
+            List<StoreSalesRank> itemList = StreamSupport.stream(items.spliterator(), false)
+                    .sorted(Comparator.comparing(StoreSalesRank::getTotalSales).reversed())
+                    .collect(Collectors.toList());
+
+            for (int i = 0; i < itemList.size(); i++) {
+                itemList.get(i).setRanking(i+1);
+            }
+
+            storeSalesRankRepository.saveAll(itemList);
+        };
+    }
+
+    private LocalDate getYesterday() {
+        return LocalDate.now().minusDays(1);
+    }
+
+    private LocalDateTime getStartDate() {
+        return getYesterday().atStartOfDay();
+    }
+
+    private LocalDateTime getEndDate() {
+        return getYesterday().atTime(LocalTime.MAX);
     }
 }
