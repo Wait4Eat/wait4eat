@@ -1,8 +1,9 @@
-package com.example.wait4eat.global.file.image.service;
+package com.example.wait4eat.infra.s3.service;
 
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import com.example.wait4eat.global.file.image.dto.ImageUploadResult;
+import com.example.wait4eat.global.file.image.service.ImageUploader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

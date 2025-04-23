@@ -1,6 +1,7 @@
-package com.example.wait4eat.domain.notification.publisher;
+package com.example.wait4eat.infra.redis.publisher;
 
-import com.example.wait4eat.domain.notification.event.NotificationEvent;
+import com.example.wait4eat.global.message.payload.NotificationPayload;
+import com.example.wait4eat.domain.notification.publisher.NotificationPublisher;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +20,13 @@ public class RedisNotificationPublisher implements NotificationPublisher {
     private final ChannelTopic channelTopic;
 
     @Override
-    public void publish(NotificationEvent event) {
+    public void publish(NotificationPayload payload) {
         try {
-            String message = objectMapper.writeValueAsString(event);
+            String message = objectMapper.writeValueAsString(payload);
             redisTemplate.convertAndSend(channelTopic.getTopic(), message);
         } catch (JsonProcessingException e) {
             log.error("Redis publish 실패: {}", e.getMessage(), e);
+            throw new RuntimeException(e); // 재처리 유도
         }
     }
 }

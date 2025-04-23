@@ -1,7 +1,7 @@
-package com.example.wait4eat.domain.notification.subscriber;
+package com.example.wait4eat.infra.redis.subscriber;
 
-import com.example.wait4eat.domain.notification.event.NotificationEvent;
-import com.example.wait4eat.domain.notification.sse.SseEmitterManager;
+import com.example.wait4eat.global.message.payload.NotificationPayload;
+import com.example.wait4eat.infra.sse.SseEmitterManager;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +22,10 @@ public class RedisSubscriber implements MessageListener {
     public void onMessage(Message message, byte[] pattern) {
         try {
             String json = new String(message.getBody());
-            NotificationEvent event = objectMapper.readValue(json, NotificationEvent.class);
-            log.debug("Redis 메시지 수신: userId={}, type={}", event.getUserId(), event.getType());
+            NotificationPayload payload = objectMapper.readValue(json, NotificationPayload.class);
+            log.debug("Redis 메시지 수신: userId={}, type={}", payload.getTargetUserId(), payload.getNotificationType());
 
-            sseEmitterManager.send(event.getUserId(), event);
+            sseEmitterManager.send(payload.getTargetUserId(), payload.getMessage());
         } catch (JsonProcessingException e) {
             log.error("Redis 메시지 파싱 실패", e);
         } catch (Exception e) {

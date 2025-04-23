@@ -1,4 +1,4 @@
-package com.example.wait4eat.global.file.config;
+package com.example.wait4eat.infra.s3.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
