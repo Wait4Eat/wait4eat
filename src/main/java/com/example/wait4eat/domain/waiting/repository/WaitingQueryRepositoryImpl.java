@@ -126,7 +126,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
             int currentWaitingTeamCount = countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
             Long rank = getUserWaitingRank(storeId, waitingId);
-            int myWaitingOrder = (rank != null) ? rank.intValue() : -1;
+            Integer myWaitingOrder = (rank != null) ? rank.intValue() : null;
 
             return Optional.of(MyWaitingResponse.of(waitingResult, currentWaitingTeamCount, myWaitingOrder));
         } else {
