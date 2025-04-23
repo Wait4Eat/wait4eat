@@ -91,7 +91,12 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
         // 3. 조회된 Waiting 엔티티 리스트를 WaitingResponse로 변환
         List<WaitingResponse> content = waitings.stream()
-                .map(WaitingResponse::from)
+                .map(w -> {
+                    Long rank = w.getStatus() == WaitingStatus.WAITING
+                            ? getUserWaitingRank(w.getStore().getId(), w.getId())
+                            : null;
+                    return WaitingResponse.of(w, rank);
+                })
                 .collect(Collectors.toList());
 
         // 4. 페이징 처리를 위한 전체 개수 쿼리

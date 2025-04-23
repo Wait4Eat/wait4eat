@@ -13,7 +13,7 @@ public class WaitingResponse {
     private final Long storeId;
     private final Long userId;
     private final int peopleCount;
-    private final int myWaitingOrder;
+    private final Integer myWaitingOrder;
     private final WaitingStatus status;
     private final LocalDateTime createdAt;
     private final LocalDateTime activatedAt;
@@ -27,7 +27,7 @@ public class WaitingResponse {
             Long storeId,
             Long userId,
             int peopleCount,
-            int myWaitingOrder,
+            Integer myWaitingOrder,
             WaitingStatus status,
             LocalDateTime createdAt,
             LocalDateTime activatedAt,
@@ -48,13 +48,13 @@ public class WaitingResponse {
         this.enteredAt = enteredAt;
     }
 
-    public static WaitingResponse from(Waiting waiting) {
+    public static WaitingResponse of(Waiting waiting, Long rank) {
         return WaitingResponse.builder()
                 .waitingId(waiting.getId())
                 .storeId(waiting.getStore().getId())
                 .userId(waiting.getUser().getId())
                 .peopleCount(waiting.getPeopleCount())
-                .myWaitingOrder(waiting.getMyWaitingOrder())
+                .myWaitingOrder(rank != null ? rank.intValue() : null)
                 .status(waiting.getStatus())
                 .createdAt(waiting.getCreatedAt())
                 .activatedAt(waiting.getActivatedAt())
