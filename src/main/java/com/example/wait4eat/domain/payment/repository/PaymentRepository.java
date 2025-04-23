@@ -1,19 +1,14 @@
 package com.example.wait4eat.domain.payment.repository;
 
 import com.example.wait4eat.domain.payment.entity.Payment;
-<<<<<<< HEAD
 import com.example.wait4eat.domain.payment.enums.PaymentStatus;
-import com.example.wait4eat.domain.waiting.entity.Waiting;
-=======
 import com.example.wait4eat.domain.store.entity.Store;
->>>>>>> f777967 (feat(dashboard): 통계 기능 가게별 매출, 매출 순위 (#65))
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.time.LocalDate;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByPaymentKey(String paymentKey);
@@ -24,19 +19,11 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findByVerifiedFalseAndCreatedAtBefore(LocalDateTime threshold);
 
     @Query("""
-    SELECT COALESCE(SUM(p.amount), 0)
+    SELECT SUM(p.amount)
     FROM Payment p
-    WHERE FUNCTION('DATE', p.createdAt) = :targetDate
-      AND p.status = com.example.wait4eat.domain.payment.enums.PaymentStatus.PAID
+    WHERE p.status = :status AND p.paidAt BETWEEN :startDate AND :endDate
     """)
-    Long sumSalesByDate(LocalDate targetDate);
+    Long sumSalesByDate(LocalDateTime startDate, LocalDateTime endDate, PaymentStatus paymentStatus);
 
-    @Query("""
-    SELECT COALESCE(SUM(p.amount), 0)
-    FROM Payment p
-    WHERE FUNCTION('DATE', p.createdAt) = :targetDate
-      AND p.waiting.store = :store
-      AND p.status = com.example.wait4eat.domain.payment.enums.PaymentStatus.PAID
-    """)
-    Long sumSalesByStoreAndDate(Store store, LocalDate targetDate);
+    Long sumSalesByStoreAndCreatedAtBetween(Store store, LocalDateTime startDate, LocalDateTime endDate);
 }
