@@ -1,7 +1,7 @@
 package com.example.wait4eat.domain.notification.publisher;
 
-import com.example.wait4eat.domain.notification.event.NotificationEvent;
+import com.example.wait4eat.global.message.payload.NotificationPayload;
 
 public interface NotificationPublisher {
-    void publish(NotificationEvent notificationEvent);
+    void publish(NotificationPayload notificationPayload);
 }
