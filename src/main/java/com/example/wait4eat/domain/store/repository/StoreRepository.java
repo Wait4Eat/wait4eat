@@ -7,10 +7,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+
+import java.time.LocalDate;
 import java.util.Optional;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,5 +34,7 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     GROUP BY s.id
     ORDER BY COUNT(w.id) DESC
     """)
-    List<Store> findTop10StoresByWaitingCount(@Param("startOfDay") LocalDateTime start, @Param("endOfDay") LocalDateTime end);
+    List<Store> findTop10StoresByWaitingCount(@Param("startOfDay") LocalDateTime start, @Param("endOfDay") LocalDateTime end, Pageable pageable);
+
+    Long countByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 }
