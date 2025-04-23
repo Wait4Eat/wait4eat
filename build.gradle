@@ -49,8 +49,17 @@ dependencies {
     // redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
-    // AWS S3
-    implementation 'software.amazon.awssdk:s3:2.20.134'
+    // AWS
+    implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.0.1")
+
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs'
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3'
+    implementation 'io.awspring.cloud:spring-cloud-aws-sqs'
+    implementation 'software.amazon.awssdk:s3:2.20.136'
+
+    // 성능 측정
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-core'
 
     // Lombok
     testCompileOnly 'org.projectlombok:lombok:1.18.38'
