@@ -2,7 +2,7 @@ package com.example.wait4eat.domain.notification.controller;
 
 import com.example.wait4eat.domain.notification.dto.response.NotificationResponse;
 import com.example.wait4eat.domain.notification.service.NotificationService;
-import com.example.wait4eat.domain.notification.sse.SseEmitterManager;
+import com.example.wait4eat.infra.sse.SseEmitterManager;
 import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.auth.jwt.JwtUtil;
 import com.example.wait4eat.global.dto.response.PageResponse;
