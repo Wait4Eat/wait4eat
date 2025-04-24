@@ -31,6 +31,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.lang.NonNull;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -54,14 +55,14 @@ public class BatchConfig {
     @Bean
     public Job dailyStatisticsJob() {
         return new JobBuilder("dailyStatisticsJob", jobRepository)
-                .start(updateDashboardStep())
+                .start(updateDailyDashboardStep())
                 .next(updatePopularStoreStep())
                 .next(updateStoreSalesRankStep())
                 .build();
     }
 
     @Bean
-    public Step updateDashboardStep() {
+    public Step updateDailyDashboardStep() {
         return new StepBuilder("updateDashboardStep", jobRepository)
                 .tasklet(dashboardUpdateTasklet(), transactionManager)
                 .build();
@@ -94,7 +95,7 @@ public class BatchConfig {
             Long dailyUserCount = userRepository.countByLoginDateAndRole(getYesterday(), UserRole.ROLE_USER);
             Long totalStoreCount = storeRepository.count();
             Long dailyNewStoreCount = storeRepository.countByCreatedAtBetween(getStartDate(), getEndDate());
-            Long dailyTotalSales = paymentRepository.sumSalesByDate(getStartDate(), getEndDate(), PaymentStatus.PAID);
+            BigDecimal dailyTotalSales = paymentRepository.sumSalesByDate(getStartDate(), getEndDate(), PaymentStatus.PAID);
 
             Dashboard dashboard = Dashboard.builder()
                     .totalUserCount(totalUserCount)
@@ -102,7 +103,7 @@ public class BatchConfig {
                     .totalStoreCount(totalStoreCount)
                     .dailyNewStoreCount(dailyNewStoreCount)
                     .dailyTotalSales(dailyTotalSales)
-                    .statisticsDate(LocalDate.now())
+                    .statisticsDate(getYesterday())
                     .build();
 
             dashboardRepository.save(dashboard);
@@ -158,12 +159,9 @@ public class BatchConfig {
     @StepScope
     public ItemProcessor<Store, StoreSalesRank> storeSalesRankProcessor() {
         return new ItemProcessor<>() {
-            private final LocalDateTime startDate = getStartDate();
-            private final LocalDateTime endDate = getEndDate();
-
             @Override
             public StoreSalesRank process(@NonNull Store store) {
-                Long totalSales = paymentRepository.sumSalesByStoreAndCreatedAtBetween(store, getStartDate(), getEndDate());
+                BigDecimal totalSales = paymentRepository.sumAmountByStoreAndCreatedAtBetween(store, getStartDate(), getEndDate());
                 Dashboard findDashboard = dashboardRepository.findByStatisticsDateOrElseThrow(getYesterday());
 
                 return StoreSalesRank.builder()
