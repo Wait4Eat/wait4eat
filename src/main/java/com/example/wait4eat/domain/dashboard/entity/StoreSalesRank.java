@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "store_sales_rank")
 @Getter
@@ -22,7 +24,7 @@ public class StoreSalesRank {
     private String storeName;
 
     @Column(nullable = false)
-    private Long totalSales;
+    private BigDecimal totalSales;
 
     @Setter
     @Column(nullable = false)
@@ -33,7 +35,7 @@ public class StoreSalesRank {
     private Dashboard dashboard;
 
     @Builder
-    public StoreSalesRank(Long storeId, String storeName, Long totalSales, int ranking, Dashboard dashboard) {
+    public StoreSalesRank(Long storeId, String storeName, BigDecimal totalSales, int ranking, Dashboard dashboard) {
         this.storeId = storeId;
         this.storeName = storeName;
         this.totalSales = totalSales;

@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -33,7 +34,7 @@ public class Dashboard {
     private Long dailyNewStoreCount;
 
     @Column(nullable = false)
-    private Long dailyTotalSales;
+    private BigDecimal dailyTotalSales;
 
     @Column(nullable = false, unique = true)
     private LocalDate statisticsDate;
@@ -44,7 +45,7 @@ public class Dashboard {
             Long dailyUserCount,
             Long totalStoreCount,
             Long dailyNewStoreCount,
-            Long dailyTotalSales,
+            BigDecimal dailyTotalSales,
             LocalDate statisticsDate
     ) {
         this.totalUserCount = totalUserCount;
