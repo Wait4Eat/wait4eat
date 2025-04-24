@@ -52,6 +52,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
     }
 
     @Override
+    // 매장 ID와 웨이팅 ID를 사용하여 대기 번호 조회
     public Long getUserWaitingRank(Long storeId, Long waitingId) {
         boolean isMember = waitingIdRedisTemplate.opsForZSet()
                 .rank(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId) != null;
@@ -61,7 +62,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
         }
 
         Long rank = waitingIdRedisTemplate.opsForZSet().rank(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId);
-        return rank != null ? rank + 1 : null;
+        return rank != null ? rank + 1 : null; // Redis의 rank()는 0부터 시작하므로 +1 해서 순위 표시
     }
 
     @Override

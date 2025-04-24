@@ -176,7 +176,7 @@ public class WaitingServiceImpl implements WaitingService {
             updated = true;
         }
 
-        // 사장님 웨이팅 개별 취소 (REQUESTED -> CANCELLED)
+        // 사장님 웨이팅 개별 취소 (REQUESTED -> CANCELLED) & 유저가 본인 웨이팅 취소
         else if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.REQUESTED && canAdvance) {
             handleRequestedToCancelled(waiting);
             updated = true;
@@ -188,7 +188,7 @@ public class WaitingServiceImpl implements WaitingService {
             updated = true;
         }
 
-        // 사장님 웨이팅 개별 취소 (CALLED -> CANCELLED)
+        // 사장님 웨이팅 개별 취소 (CALLED -> CANCELLED) & 유저가 본인 웨이팅 취소
         else if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.CALLED && canAdvance) {
             handleCalledToCancelled(waiting);
             updated = true;
@@ -226,7 +226,7 @@ public class WaitingServiceImpl implements WaitingService {
         log.info("가게 {} 웨이팅 팀 추가됨: {} (현재 대기열 크기: {})", storeId, waiting.getId(), currentSize);
     }
 
-    // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0, 레디스 제트셋에서 제거하고 재정렬 안해도 됨
+    // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0, 레디스 제트셋에서 제거
     private void handleCalled(Waiting waiting) {
         validateCanBeCalled(waiting); // 호출 전 유효성 검증
 
@@ -256,7 +256,7 @@ public class WaitingServiceImpl implements WaitingService {
         log.info("가게 {} 웨이팅 요청 취소됨 (결제 전): {}", storeId, waiting.getId());
     }
 
-    // WAITING -> CANCELLED: 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지, 레디스 제트셋에서 제거하고 재정렬 안해도 됨
+    // WAITING -> CANCELLED: 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지, 레디스 제트셋에서 제거
     private void handleWaitingToCancelled(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
         Long waitingId = waiting.getId();
@@ -270,7 +270,7 @@ public class WaitingServiceImpl implements WaitingService {
         log.info("가게 {} 웨이팅 취소됨 (대기 중): {}", storeId, waitingId);
     }
 
-    // CALLED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서, 유지 레디스에 영향 없음
+    // CALLED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지, 레디스에 영향 없음
     private void handleCalledToCancelled(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
         waiting.cancel(getCurrentTime());
