@@ -53,6 +53,13 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
     @Override
     public Long getUserWaitingRank(Long storeId, Long waitingId) {
+        boolean isMember = waitingIdRedisTemplate.opsForZSet()
+                .rank(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId) != null;
+
+        if (!isMember) {
+            return null; // 이미 호출되었거나 대기열에 없음
+        }
+
         Long rank = waitingIdRedisTemplate.opsForZSet().rank(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId);
         return rank != null ? rank + 1 : null;
     }
