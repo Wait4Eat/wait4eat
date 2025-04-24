@@ -1,0 +1,96 @@
+package com.example.wait4eat.domain.dashboard.batch;
+
+import com.example.wait4eat.domain.dashboard.entity.Dashboard;
+import com.example.wait4eat.domain.dashboard.entity.PopularStore;
+import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
+import com.example.wait4eat.domain.payment.entity.Payment;
+import com.example.wait4eat.domain.store.entity.Store;
+import com.example.wait4eat.domain.user.entity.User;
+import lombok.RequiredArgsConstructor;
+import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.item.Chunk;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.NonNull;
+
+import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+@Configuration
+@RequiredArgsConstructor
+public class DashboardWriterConfig {
+    private final DashboardBatchSupport BatchSupport;
+
+    @Bean
+    public ItemWriter<User> userStatsWriter(DashboardStatsAccumulator accumulator) {
+        return users -> {
+            for (User user : users) {
+                boolean isLoginYesterday = user.getLoginDate() != null && user.getLoginDate().equals(BatchSupport.getYesterday());
+
+                accumulator.addUser(isLoginYesterday);
+            }
+        };
+    }
+
+    @Bean
+    public ItemWriter<Store> storeStatsWriter(DashboardStatsAccumulator accumulator) {
+        return stores -> {
+            for (Store store : stores) {
+                boolean isCreatedYesterday = store.getCreatedAt() != null &&
+                        store.getCreatedAt().toLocalDate().equals(BatchSupport.getYesterday());
+
+                accumulator.addStore(isCreatedYesterday);
+            }
+        };
+    }
+
+    @Bean
+    public ItemWriter<Payment> paymentStatsWriter(DashboardStatsAccumulator accumulator) {
+        return payments -> {
+            BigDecimal totalSales = payments.getItems().stream()
+                    .map(Payment::getAmount)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            accumulator.addPayment(totalSales);
+        };
+    }
+
+
+    @Bean
+    public ItemWriter<Dashboard> dashboardWriter() {
+        return new ItemWriter<Dashboard>() {
+            @Override
+            public void write(@NonNull Chunk<? extends Dashboard> items) throws Exception {
+                BatchSupport.dashboardRepository.saveAll(items);
+            }
+        };
+    }
+
+    @Bean
+    @StepScope
+    public ItemWriter<PopularStore> popularStoreWriter() {
+        return BatchSupport.popularStoreRepository::saveAll;
+    }
+
+    @Bean
+    @StepScope
+    public ItemWriter<StoreSalesRank> storeSalesRankWriter() {
+        return items -> {
+            List<StoreSalesRank> itemList = StreamSupport.stream(items.spliterator(), false)
+                    .sorted(Comparator.comparing(StoreSalesRank::getTotalSales).reversed())
+                    .collect(Collectors.toList());
+
+            for (int i = 0; i < itemList.size(); i++) {
+                itemList.get(i).setRanking(i+1);
+            }
+
+            BatchSupport.storeSalesRankRepository.saveAll(itemList);
+        };
+    }
+}

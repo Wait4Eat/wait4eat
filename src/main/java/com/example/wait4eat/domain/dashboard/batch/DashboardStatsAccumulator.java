@@ -1,7 +1,6 @@
-package com.example.wait4eat.global.dto;
+package com.example.wait4eat.domain.dashboard.batch;
 
 import lombok.Getter;
-import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 

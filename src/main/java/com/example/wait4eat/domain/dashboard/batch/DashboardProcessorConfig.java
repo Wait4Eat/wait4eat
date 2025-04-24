@@ -1,0 +1,83 @@
+package com.example.wait4eat.domain.dashboard.batch;
+
+import com.example.wait4eat.domain.dashboard.entity.Dashboard;
+import com.example.wait4eat.domain.dashboard.entity.PopularStore;
+import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
+import com.example.wait4eat.domain.store.entity.Store;
+import lombok.RequiredArgsConstructor;
+import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.NonNull;
+
+import java.math.BigDecimal;
+
+@Configuration
+@RequiredArgsConstructor
+public class DashboardProcessorConfig {
+    private final DashboardBatchSupport BatchSupport;
+
+    @Bean
+    public ItemProcessor<DashboardStatsAccumulator, Dashboard> dashboardStatsAccumulatorProcessor() {
+        return new ItemProcessor<DashboardStatsAccumulator, Dashboard>() {
+            @Override
+            public Dashboard process(@NonNull DashboardStatsAccumulator accumulator) throws Exception {
+                return Dashboard.builder()
+                        .totalUserCount(accumulator.getTotalUserCount())
+                        .dailyUserCount(accumulator.getDailyUserCount())
+                        .totalStoreCount(accumulator.getTotalStoreCount())
+                        .dailyNewStoreCount(accumulator.getDailyNewStoreCount())
+                        .dailyTotalSales(accumulator.getTotalDailySales())
+                        .statisticsDate(BatchSupport.getYesterday())
+                        .build();
+            }
+        };
+    }
+
+    @Bean
+    @StepScope
+    public ItemProcessor<Store, PopularStore> popularStoreProcessor() {
+        return new ItemProcessor<>() {
+            private int rank = 1;
+
+            @Override
+            public PopularStore process(@NonNull Store store) {
+                int waitingCount = BatchSupport.waitingRepository
+                        .countByStoreAndCreatedAtBetween(store, BatchSupport.getStartDate(), BatchSupport.getEndDate());
+                Dashboard dashboard = BatchSupport.dashboardRepository
+                        .findByStatisticsDateOrElseThrow(BatchSupport.getYesterday());
+
+                return PopularStore.builder()
+                        .storeId(store.getId())
+                        .storeName(store.getName())
+                        .waitingCount(waitingCount)
+                        .ranking(rank++)
+                        .dashboard(dashboard)
+                        .build();
+            }
+        };
+    }
+
+    @Bean
+    @StepScope
+    public ItemProcessor<Store, StoreSalesRank> storeSalesRankProcessor() {
+        return new ItemProcessor<>() {
+            @Override
+            public StoreSalesRank process(@NonNull Store store) {
+                BigDecimal totalSales = BatchSupport.paymentRepository
+                        .sumAmountByStoreAndCreatedAtBetween(store, BatchSupport.getStartDate(), BatchSupport.getEndDate());
+                Dashboard findDashboard = BatchSupport.dashboardRepository
+                        .findByStatisticsDateOrElseThrow(BatchSupport.getYesterday());
+
+                return StoreSalesRank.builder()
+                        .storeId(store.getId())
+                        .storeName(store.getName())
+                        .totalSales(totalSales)
+                        .dashboard(findDashboard)
+                        .ranking(0)
+                        .build();
+            }
+        };
+    }
+}
