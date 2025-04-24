@@ -1,10 +1,8 @@
 package com.example.wait4eat.domain.waiting.service;
 
 import com.example.wait4eat.domain.store.entity.Store;
-import com.example.wait4eat.domain.store.repository.StoreRepository;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.user.enums.UserRole;
-import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
@@ -18,29 +16,27 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class WaitingStatusChangeTest {
+class WaitingStatusChangeUnitTest {
 
     @Mock
     private WaitingRepository waitingRepository;
     @Mock
-    private StoreRepository storeRepository;
+    private RedisTemplate<String, Long> waitingIdRedisTemplate;
     @Mock
-    private UserRepository userRepository;
-    @Mock
-    private RedisTemplate<String, String> redisTemplate;
+    private ZSetOperations<String, Long> zSetOperations;
     @InjectMocks
-    private WaitingService waitingService;
+    private WaitingServiceImpl waitingService;
 
     private Store store;
     private User owner;
@@ -58,13 +54,6 @@ class WaitingStatusChangeTest {
                 .build();
         ReflectionTestUtils.setField(owner, "id", ownerId);
 
-        Long storeId = 10L;
-        store = Store.builder()
-                .name("Test Store")
-                .user(owner)
-                .build();
-        ReflectionTestUtils.setField(store, "id", storeId);
-
         Long userId = 2L;
         user = User.builder()
                 .email("user@example.com")
@@ -73,6 +62,13 @@ class WaitingStatusChangeTest {
                 .password("encodedCustomerPassword")
                 .build();
         ReflectionTestUtils.setField(user, "id", userId);
+
+        Long storeId = 10L;
+        store = Store.builder()
+                .name("Test Store")
+                .user(owner)
+                .build();
+        ReflectionTestUtils.setField(store, "id", storeId);
 
         Long waitingId = 100L;
         waiting = Waiting.builder()
@@ -92,28 +88,29 @@ class WaitingStatusChangeTest {
         @WithMockAuthUser(userId = 1L, email = "owner@example.com", role = UserRole.ROLE_OWNER)
         void REQUESTED_에서_WAITING_으로_변경_성공() {
             // given
-            when(waitingRepository.findById(waiting.getId())).thenReturn(Optional.of(waiting));
-            when(waitingRepository.findByStoreIdAndStatusOrderByActivatedAtAsc(store.getId(), WaitingStatus.WAITING))
-                    .thenReturn(List.of(waiting));
             when(waitingRepository.countByStoreIdAndStatus(store.getId(), WaitingStatus.WAITING)).thenReturn(1);
+            when(waitingIdRedisTemplate.opsForZSet()).thenReturn(zSetOperations);
+            when(zSetOperations.add(anyString(), eq(waiting.getId()), anyDouble())).thenReturn(true); // Redis ZSET 추가 성공 가정
 
             // when
-            boolean updated = waitingService.updateWaiting(WaitingStatus.WAITING, waiting);
+            boolean updated = waitingService.updateWaiting(WaitingStatus.WAITING, waiting); // 상태 변경
 
             // then
-            assertTrue(updated);
+            assertTrue(updated); // 상태 변경이 성공했는지 (true를 반환했는지) 검증
             assertEquals(WaitingStatus.WAITING, waiting.getStatus());
             assertNotNull(waiting.getActivatedAt());
-            verify(waitingRepository, times(1)).saveAll(anyList()); // reorderWaitingQueue 호출 검증
+            verify(waitingRepository, times(1)).save(waiting); // save 메서드가 정확히 1번 호출되었는지 검증
+            verify(waitingIdRedisTemplate.opsForZSet(), times(1)).add(anyString(), eq(waiting.getId()), anyDouble()); // Redis ZSET 추가 검증 (opsForZSet().add 메서드가 정확히 1번 호출되었는지)
         }
 
         @Test
         @WithMockAuthUser(userId = 1L, email = "owner@example.com", role = UserRole.ROLE_OWNER)
         void WAITING_에서_CALLED_로_변경_성공() {
             // given
-            when(waitingRepository.findByStoreIdAndStatusOrderByActivatedAtAsc(store.getId(), WaitingStatus.WAITING))
-                    .thenReturn(List.of()); // 웨이팅 목록이 비어있다고 가정
-            when(waitingRepository.countByStoreIdAndStatus(store.getId(), WaitingStatus.WAITING)).thenReturn(0);
+            when(waitingIdRedisTemplate.opsForZSet()).thenReturn(zSetOperations);
+            when(zSetOperations.range(anyString(), eq(0L), eq(0L))).thenReturn(Set.of(waiting.getId())); // 웨이팅 큐의 첫 번째 요소로 해당 웨이팅 ID를 반환
+            when(zSetOperations.remove(anyString(), eq(waiting.getId()))).thenReturn(1L); // Redis ZSET에서 제거 성공 가정
+
             waiting.waiting(LocalDateTime.now());
 
             // when
@@ -124,7 +121,8 @@ class WaitingStatusChangeTest {
             assertEquals(WaitingStatus.CALLED, waiting.getStatus());
             assertNotNull(waiting.getCalledAt());
             assertEquals(0, waiting.getMyWaitingOrder()); // 호출되면 순서 0으로 변경 확인
-            verify(waitingRepository, times(1)).saveAll(anyList()); // reorderWaitingQueue 호출 검증
+            verify(waitingRepository, times(1)).save(waiting);
+            verify(waitingIdRedisTemplate.opsForZSet(), times(1)).remove(anyString(), eq(waiting.getId())); // Redis ZSET에서 제거 검증 추가
         }
 
         @Test
@@ -137,17 +135,15 @@ class WaitingStatusChangeTest {
             assertTrue(updated);
             assertEquals(WaitingStatus.CANCELLED, waiting.getStatus());
             assertNotNull(waiting.getCancelledAt());
-            verify(waitingRepository, never()).saveAll(anyList()); // reorderWaitingQueue 호출 안됨 확인
+            verify(waitingRepository, times(1)).save(waiting);
         }
 
         @Test
-        @WithMockAuthUser(userId = 1L, email = "owner@example.com", role = UserRole.ROLE_OWNER)
         void WAITING_에서_CANCELLED_로_변경_성공() {
             // given
             waiting.waiting(LocalDateTime.now());
-            when(waitingRepository.findByStoreIdAndStatusOrderByActivatedAtAsc(store.getId(), WaitingStatus.WAITING))
-                    .thenReturn(List.of());
-            when(waitingRepository.countByStoreIdAndStatus(store.getId(), WaitingStatus.WAITING)).thenReturn(0);
+            when(waitingIdRedisTemplate.opsForZSet()).thenReturn(zSetOperations);
+            when(zSetOperations.remove(anyString(), eq(waiting.getId()))).thenReturn(1L); // Redis에서 제거 성공 가정
 
             // when
             boolean updated = waitingService.updateWaiting(WaitingStatus.CANCELLED, waiting);
@@ -156,18 +152,15 @@ class WaitingStatusChangeTest {
             assertTrue(updated);
             assertEquals(WaitingStatus.CANCELLED, waiting.getStatus());
             assertNotNull(waiting.getCancelledAt());
-            verify(waitingRepository, times(1)).saveAll(anyList()); // reorderWaitingQueue 호출 검증
+            verify(waitingRepository, times(1)).save(waiting);
+            verify(waitingIdRedisTemplate.opsForZSet(), times(1)).remove(anyString(), eq(waiting.getId())); // Redis remove 호출 검증
         }
 
         @Test
-        @WithMockAuthUser(userId = 1L, email = "owner@example.com", role = UserRole.ROLE_OWNER)
         void CALLED_에서_CANCELLED_로_변경_성공() {
             // given
             waiting.waiting(LocalDateTime.now());
             waiting.call(LocalDateTime.now());
-            when(waitingRepository.findByStoreIdAndStatusOrderByActivatedAtAsc(store.getId(), WaitingStatus.WAITING))
-                    .thenReturn(List.of());
-            when(waitingRepository.countByStoreIdAndStatus(store.getId(), WaitingStatus.WAITING)).thenReturn(0);
 
             // when
             boolean updated = waitingService.updateWaiting(WaitingStatus.CANCELLED, waiting);
@@ -176,16 +169,14 @@ class WaitingStatusChangeTest {
             assertTrue(updated);
             assertEquals(WaitingStatus.CANCELLED, waiting.getStatus());
             assertNotNull(waiting.getCancelledAt());
-            verify(waitingRepository, times(1)).saveAll(anyList()); // reorderWaitingQueue 호출 검증
+            verify(waitingRepository, times(1)).save(waiting);
+
         }
 
         @Test
         @WithMockAuthUser(userId = 1L, email = "owner@example.com", role = UserRole.ROLE_OWNER)
         void CALLED_에서_COMPLETED_로_변경_성공() {
             // given
-            when(waitingRepository.findByStoreIdAndStatusOrderByActivatedAtAsc(store.getId(), WaitingStatus.WAITING))
-                    .thenReturn(List.of());
-            when(waitingRepository.countByStoreIdAndStatus(store.getId(), WaitingStatus.WAITING)).thenReturn(0);
             waiting.waiting(LocalDateTime.now()); // 먼저 WAITING 상태로
             waiting.call(LocalDateTime.now());   // 그 다음 CALLED 상태로
 
@@ -195,9 +186,9 @@ class WaitingStatusChangeTest {
             // then
             assertTrue(updated);
             assertEquals(WaitingStatus.COMPLETED, waiting.getStatus());
-            assertNotNull(waiting.getEnteredAt());
             assertEquals(0, waiting.getMyWaitingOrder()); // 완료되면 순서 0으로 유지 확인
-            verify(waitingRepository, times(1)).saveAll(anyList()); // reorderWaitingQueue 호출 검증
+            assertNotNull(waiting.getEnteredAt());
+            verify(waitingRepository, times(1)).save(waiting);
         }
 
         @Test
