@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class OutboxRetryScheduler { // TODO : 여러 인스턴스에서 동시�
     private static final int MAX_RETRY_COUNT = 3;
     private static final int BATCH_SIZE = 100;
 
+    @Transactional
     @Scheduled(fixedRate = 10000)
     public void retry() {
         List<OutboxMessage> messages = outboxMessageRepository
@@ -39,9 +41,8 @@ public class OutboxRetryScheduler { // TODO : 여러 인스턴스에서 동시�
                 log.info("재발송 성공: id={}", message.getId());
                 message.markAsSent();
             } catch (Exception e) {
-                message.markAsFailed();
                 message.incrementRetryCount();
-                log.warn("재발송 실패: type={}, aggregateId={}, reason={}",
+                log.warn("메세지 큐 재발송 실패: type={}, aggregateId={}, reason={}",
                         message.getAggregateType(), message.getAggregateId(), e.getMessage());
             }
         }
