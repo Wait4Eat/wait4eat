@@ -9,12 +9,13 @@ import com.example.wait4eat.domain.waiting.dto.request.UpdateWaitingRequest;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
-import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalTime;
 import java.util.Random;
@@ -22,7 +23,11 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @Slf4j
 @SpringBootTest
@@ -31,210 +36,330 @@ public class WaitingServiceConcurrencyTest {
 
     @Autowired
     private WaitingService waitingService;
-
     @Autowired
     private WaitingRepository waitingRepository;
-
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private StoreRepository storeRepository;
-
     @Autowired
-    private EntityManager entityManager;
+    private RedisTemplate<String, Long> waitingIdRedisTemplate;
+    @Autowired
+    private TransactionTemplate transactionTemplate; // 트랜잭션 관리를 위한 템플릿 빈 주입
 
     private Store store;
     private User owner;
-    private User user;
-    private Waiting waiting;
+    private User user1;
 
-    private final int threadCount = 2;
-    private ExecutorService executorService;
-    private CountDownLatch latch;
+    private static final String WAITING_QUEUE_KEY_PREFIX = "waiting:queue:store:";
+    private static final int repetitionCount = 10;
 
     @BeforeEach
-    void setUp() {
-        owner = User.builder()
-                .email("owner@example.com")
-                .nickname("owner")
-                .password("encodedOwnerPassword")
-                .role(UserRole.ROLE_OWNER)
-                .build();
-        owner = userRepository.save(owner);
+    void setUpBase() {
+        owner = createUser("owner" + System.currentTimeMillis() + "@example.com", "owner", UserRole.ROLE_OWNER);
+        user1 = createUser("user1" + System.currentTimeMillis() + "@example.com", "user1", UserRole.ROLE_USER);
+        store = createStore(owner, "Test Store");
+    }
 
-        store = Store.builder()
-                .name("Test Store")
+    private User createUser(String email, String nickname, UserRole role) {
+        User user = User.builder()
+                .email(email)
+                .nickname(nickname)
+                .password("encodedPassword")
+                .role(role)
+                .build();
+        return userRepository.save(user);
+    }
+
+    private Store createStore(User owner, String name) {
+        Store store = Store.builder()
+                .name(name)
                 .user(owner)
                 .address("address")
                 .openTime(LocalTime.MIN)
                 .closeTime(LocalTime.MAX)
                 .depositAmount(1000000)
                 .build();
-        store = storeRepository.save(store);
+        return storeRepository.save(store);
+    }
 
-        user = User.builder()
-                .email("user@example.com")
-                .nickname("user")
-                .role(UserRole.ROLE_USER)
-                .password("encodedCustomerPassword")
-                .build();
-        user = userRepository.save(user);
-
-        waiting = Waiting.builder()
+    private Waiting createWaiting(Store store, User user, WaitingStatus status) {
+        Waiting waiting = Waiting.builder()
                 .store(store)
                 .user(user)
                 .orderId(UUID.randomUUID().toString())
                 .peopleCount(2)
                 .myWaitingOrder(0)
-                .status(WaitingStatus.WAITING) // 초기 상태를 WAITING으로 설정
+                .status(status)
                 .build();
-        waiting = waitingRepository.save(waiting);
-
-        executorService = Executors.newFixedThreadPool(32); // 스레드 풀 크기 설정
-        latch = new CountDownLatch(threadCount);
+        return waitingRepository.save(waiting);
     }
 
     @AfterEach
-    void tearDown() {
-        executorService.shutdown();
+    void tearDownBase() {
+        String redisKey = WAITING_QUEUE_KEY_PREFIX + store.getId();
+        waitingIdRedisTemplate.delete(redisKey);
     }
 
     @Test
-    @DisplayName("동시성 테스트 - 하나의 쓰레드에 대해서 취소 및 호출 테스트 ")
-    @WithMockAuthUser(userId = 2L, email = "user@example.com", role = UserRole.ROLE_USER)
-    void concurrencyPessimisticLockTest() throws InterruptedException {
-        Long waitingId = waiting.getId();
-        Long userId = waiting.getUser().getId();
-        Long storeId = waiting.getStore().getId();
+    @DisplayName("사장: 요청->대기, 사용자: 요청->취소")
+    void 요청_상태에서_사장님대기_사용자취소_중_하나만_성공한다() throws InterruptedException {
 
-        AtomicInteger cancelSuccessCount = new AtomicInteger(0);
-        AtomicInteger callSuccessCount = new AtomicInteger(0);
+        for (int i = 0; i < repetitionCount; i++) {
+            log.info("Iteration: {}", i + 1);
 
-        for (int i = 0; i < threadCount; i++) {
-            int threadId = i;
-            executorService.execute(() -> {
-                try {
-                    if (threadId % 2 == 0) { // 짝수 스레드는 취소 시도
-                        waitingService.cancelMyWaiting(userId, waitingId);
-                        cancelSuccessCount.incrementAndGet();
-                    } else { // 홀수 스레드는 호출 시도
-                        waitingService.updateWaitingStatus(storeId, waitingId, UpdateWaitingRequest.from(WaitingStatus.CALLED));
-                        callSuccessCount.incrementAndGet();
+            // 각 반복마다 새로운 웨이팅 객체 생성
+            Waiting waiting = createWaiting(store, user1, WaitingStatus.REQUESTED);
+            Long waitingId = waiting.getId();
+            Long ownerId = owner.getId();
+            Long user1Id = user1.getId();
+
+            ExecutorService executorService = Executors.newFixedThreadPool(2); // 2개의 스레드 풀 생성
+            CountDownLatch latch = new CountDownLatch(2); // 2개의 작업 완료 대기
+            AtomicBoolean waitingSuccess = new AtomicBoolean(false); // 사장님 대기 성공 여부
+            AtomicBoolean cancelSuccess = new AtomicBoolean(false); // 사용자 취소 성공 여부
+            AtomicReference<Throwable> exceptionHolder = new AtomicReference<>(); // 예외 발생 시 저장
+
+            // 사장님 호출 스레드
+            Runnable ownerCallTask = () -> {
+                transactionTemplate.execute(status -> {
+                    try {
+                        Waiting lockedWaiting = waitingRepository.findByIdWithPessimisticLock(waitingId).orElseThrow();
+                        Thread.sleep(new Random().nextInt(50) + 50); // 약간의 딜레이
+                        if (lockedWaiting.getStatus() == WaitingStatus.REQUESTED) {
+                            waitingService.updateWaitingStatus(ownerId, waitingId, UpdateWaitingRequest.from(WaitingStatus.WAITING));
+                            waitingSuccess.set(true);
+                        }
+                    } catch (Throwable e) {
+                        exceptionHolder.set(e);
+                        status.setRollbackOnly();
                     }
+                    return null;
+                });
+                latch.countDown();
+            };
 
-                } catch (Exception e) {
-                    log.error("스레드 {}에서 오류 발생: {}", threadId, e.getMessage());
-                } finally {
-                    latch.countDown();
-                }
-            });
+            // 사용자 취소 스레드
+            Runnable userCancelTask = () -> {
+                transactionTemplate.execute(status -> {
+                    try {
+                        Waiting lockedWaiting = waitingRepository.findByIdWithPessimisticLock(waitingId).orElseThrow();
+                        if (lockedWaiting.getStatus() == WaitingStatus.REQUESTED) {
+                            waitingService.cancelMyWaiting(user1Id, waitingId);
+                            cancelSuccess.set(true);
+                        }
+                    } catch (Throwable e) {
+                        exceptionHolder.set(e);
+                        status.setRollbackOnly();
+                    }
+                    return null;
+                });
+                latch.countDown();
+            };
+
+            executorService.submit(ownerCallTask);
+            executorService.submit(userCancelTask);
+
+            latch.await();
+            executorService.shutdownNow();
+
+            // 예외 발생 여부 확인
+            if (exceptionHolder.get() != null) {
+                log.error("[{}] 예외 발생: {}", i + 1, exceptionHolder.get().getMessage());
+                throw new AssertionError("[" + (i + 1) + "] 예외 발생: " + exceptionHolder.get().getMessage());
+            }
+
+            Waiting result = waitingRepository.findById(waitingId).orElseThrow();
+            log.info("[{}] 최종 상태: {}", i + 1, result.getStatus());
+            log.info("[{}] 사장님 대기 성공: {}", i + 1, waitingSuccess.get());
+            log.info("[{}] 사용자 취소 성공: {}", i + 1, cancelSuccess.get());
+
+            // 둘 중 하나만 성공하거나, 둘 다 실패하고 최종 상태가 WAITING이어야 함
+            if (waitingSuccess.get() && cancelSuccess.get()) {
+                fail("[" + (i + 1) + "] 사장님 호출과 사용자 취소가 모두 성공했습니다. (비관적 락 실패)");
+            } else if (waitingSuccess.get()) {
+                assertThat(result.getStatus()).isEqualTo(WaitingStatus.WAITING);
+            } else if (cancelSuccess.get()) {
+                assertThat(result.getStatus()).isEqualTo(WaitingStatus.CANCELLED);
+            } else {
+                assertThat(result.getStatus()).isEqualTo(WaitingStatus.REQUESTED);
+            }
+
+            waitingRepository.delete(result); // 각 반복 후 데이터 삭제
         }
+        log.info("반복 테스트 완료!");
+    }
 
-        latch.await();
-        Waiting updatedWaiting = waitingRepository.findById(waitingId).orElseThrow();
 
-        log.info("취소 성공 횟수: {}", cancelSuccessCount.get());
-        log.info("호출 성공 횟수: {}", callSuccessCount.get());
-        log.info("최종 Waiting 상태: {}", updatedWaiting.getStatus());
+    @Test
+    @DisplayName("사장: 대기->호출, 사용자: 대기->취소")
+    void 대기_상태에서_사장님호출_사용자취소_중_하나만_성공한다() throws InterruptedException {
 
-        // 비관적 락으로 인해 둘 중 하나의 작업만 성공해야 합니다.
-        Assertions.assertTrue(cancelSuccessCount.get() + callSuccessCount.get() <= 1, "둘 중 하나의 작업만 성공해야 합니다.");
-        if (cancelSuccessCount.get() == 1) {
-            Assertions.assertEquals(WaitingStatus.CANCELLED, updatedWaiting.getStatus());
-        } else if (callSuccessCount.get() == 1) {
-            Assertions.assertEquals(WaitingStatus.CALLED, updatedWaiting.getStatus());
-        } else {
-            // 둘 다 실패했거나, 초기 상태 그대로인 경우 (비관적 락이 제대로 작동하지 않았을 가능성)
-            Assertions.assertTrue(updatedWaiting.getStatus() == WaitingStatus.WAITING, "초기 상태 또는 CANCELLED/CALLED 상태여야 합니다.");
+        for (int i = 0; i < repetitionCount; i++) {
+            log.info("Iteration: {}", i + 1);
+
+            // 각 반복마다 새로운 웨이팅 객체 생성 및 초기 상태 설정
+            Waiting waiting = createWaiting(store, user1, WaitingStatus.REQUESTED);
+            Long waitingId = waiting.getId();
+            Long ownerId = owner.getId();
+            waitingService.updateWaitingStatus(ownerId, waitingId, UpdateWaitingRequest.from(WaitingStatus.WAITING));
+
+            ExecutorService executorService = Executors.newFixedThreadPool(2); // 2개의 스레드를 사용하는 스레드 풀 생성
+            CountDownLatch latch = new CountDownLatch(2); // 2개의 작업 완료를 기다리는 CountDownLatch 생성
+            AtomicBoolean callSuccess = new AtomicBoolean(false); // 사장님 호출 성공 여부를 원자적으로 관리 (각 반복마다 초기화)
+            AtomicBoolean cancelSuccess = new AtomicBoolean(false); // 유저 취소 성공 여부를 원자적으로 관리 (각 반복마다 초기화)
+            AtomicReference<Throwable> exceptionHolder = new AtomicReference<>(); // 스레드 내에서 발생한 예외를 안전하게 참조 (각 반복마다 초기화)
+
+            Runnable callTaskWithLock = () -> {
+                transactionTemplate.execute(status -> {
+                    try {
+                        Waiting lockedWaiting = waitingRepository.findByIdWithPessimisticLock(waitingId).orElseThrow();
+                        Thread.sleep(new Random().nextInt(50) + 50); // 약간의 랜덤 딜레이 추가하여 더 현실적인 동시성 상황 연출
+                        if (lockedWaiting.getStatus() == WaitingStatus.WAITING) {
+                            waitingService.updateWaitingStatus(ownerId, waitingId, UpdateWaitingRequest.from(WaitingStatus.CALLED));
+                            callSuccess.set(true);
+                        }
+                    } catch (Throwable e) {
+                        exceptionHolder.set(e);
+                        status.setRollbackOnly();
+                    }
+                    return null;
+                });
+                latch.countDown();
+            };
+
+            Runnable cancelTaskWithLock = () -> {
+                transactionTemplate.execute(status -> {
+                    try {
+                        Waiting lockedWaiting = waitingRepository.findByIdWithPessimisticLock(waitingId).orElseThrow();
+                        if (lockedWaiting.getStatus() == WaitingStatus.WAITING) {
+                            waitingService.cancelMyWaiting(user1.getId(), waitingId);
+                            cancelSuccess.set(true);
+                        }
+                    } catch (Throwable e) {
+                        exceptionHolder.set(e);
+                        status.setRollbackOnly();
+                    }
+                    return null;
+                });
+                latch.countDown();
+            };
+
+            executorService.submit(callTaskWithLock);
+            executorService.submit(cancelTaskWithLock);
+
+            latch.await();
+            executorService.shutdownNow();
+
+            // 각 반복마다 예외 발생 여부 확인
+            if (exceptionHolder.get() != null) {
+                log.error("[{}] 예외 발생: {}", i + 1, exceptionHolder.get().getMessage());
+                throw new AssertionError("[" + (i + 1) + "] 예외 발생: " + exceptionHolder.get().getMessage());
+            }
+
+            Waiting result = waitingRepository.findById(waitingId).orElseThrow();
+            log.info("[{}] 최종 상태: {}", i + 1, result.getStatus());
+            log.info("[{}] 사장님 호출 성공: {}", i + 1, callSuccess.get());
+            log.info("[{}] 사용자 취소 성공: {}", i + 1, cancelSuccess.get());
+
+            assertThat(callSuccess.get() ^ cancelSuccess.get()).isTrue();
+
+            if (callSuccess.get()) {
+                assertThat(result.getStatus()).isEqualTo(WaitingStatus.CALLED);
+            } else if (cancelSuccess.get()) {
+                assertThat(result.getStatus()).isEqualTo(WaitingStatus.CANCELLED);
+            } else {
+                assertThat(result.getStatus()).isEqualTo(WaitingStatus.WAITING);
+            }
+            waitingRepository.delete(result); // 각 반복 후 생성된 웨이팅 데이터 삭제
         }
+        log.info("반복 테스트 완료!");
     }
 
     @Test
-    @DisplayName("동시성 테스트 - 사용자 쓰레드 취소 시도. 사장님 쓰레드 호출 시도")
-    @WithMockAuthUser(userId = 2L, email = "user@example.com", role = UserRole.ROLE_USER)
-    void concurrencyPessimisticLockUserOwnerTest() throws InterruptedException {
-        Long waitingId = waiting.getId();
-        Long userId = waiting.getUser().getId();
-        Long storeId = waiting.getStore().getId();
+    @DisplayName("사장: 호출->취소, 사용자: 호출->취소")
+    void 호출_상태에서_사장님취소_사용자취소_중_하나만_성공한다() throws InterruptedException {
 
-        AtomicInteger cancelAttemptCount = new AtomicInteger(0);
-        AtomicInteger callAttemptCount = new AtomicInteger(0);
-        AtomicInteger cancelSuccessCount = new AtomicInteger(0);
-        AtomicInteger callSuccessCount = new AtomicInteger(0);
+        for (int i = 0; i < repetitionCount; i++) {
+            log.info("Iteration: {}", i + 1);
 
-        // 사용자 스레드 (취소 시도)
-        executorService.execute(() -> {
-            try {
-                for (int i = 0; i < 10; i++) { // 여러 번 취소 시도
-                    cancelAttemptCount.incrementAndGet();
+            // 각 반복마다 새로운 웨이팅 객체 생성 및 초기 상태 설정
+            Waiting waiting = createWaiting(store, user1, WaitingStatus.REQUESTED);
+            Long waitingId = waiting.getId();
+            Long ownerId = owner.getId();
+            waitingService.updateWaitingStatus(ownerId, waitingId, UpdateWaitingRequest.from(WaitingStatus.WAITING));
+            waitingService.updateWaitingStatus(ownerId, waitingId, UpdateWaitingRequest.from(WaitingStatus.CALLED));
+
+            ExecutorService executorService = Executors.newFixedThreadPool(2); // 2개의 스레드를 사용하는 스레드 풀 생성
+            CountDownLatch latch = new CountDownLatch(2); // 2개의 작업 완료를 기다리는 CountDownLatch 생성
+            AtomicBoolean ownerCancelSuccess = new AtomicBoolean(false); // 사장님 취소 성공 여부를 원자적으로 관리 (각 반복마다 초기화)
+            AtomicBoolean userCancelSuccess = new AtomicBoolean(false); // 유저 취소 성공 여부를 원자적으로 관리 (각 반복마다 초기화)
+            AtomicReference<Throwable> exceptionHolder = new AtomicReference<>(); // 스레드 내에서 발생한 예외를 안전하게 참조 (각 반복마다 초기화)
+
+            Runnable callTaskWithLock = () -> {
+                transactionTemplate.execute(status -> {
                     try {
-                        waitingService.cancelMyWaiting(userId, waitingId);
-                        cancelSuccessCount.incrementAndGet();
-                        // 취소 성공 시 루프 종료 (테스트 목적)
-                        break;
-                    } catch (Exception e) {
-                        log.warn("사용자 취소 시도 중 오류 발생: {}", e.getMessage());
-                        try {
-                            Thread.sleep(new Random().nextInt(100)); // 약간의 딜레이
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt(); // 인터럽트 상태를 다시 설정
-                            return; // 스레드 종료 또는 루프 탈출 등 추가적인 처리 고려
+                        Waiting lockedWaiting = waitingRepository.findByIdWithPessimisticLock(waitingId).orElseThrow();
+                        Thread.sleep(new Random().nextInt(50) + 50); // 약간의 랜덤 딜레이 추가하여 더 현실적인 동시성 상황 연출
+                        if (lockedWaiting.getStatus() == WaitingStatus.CALLED) {
+                            waitingService.updateWaitingStatus(ownerId, waitingId, UpdateWaitingRequest.from(WaitingStatus.CANCELLED));
+                            ownerCancelSuccess.set(true);
                         }
+                    } catch (Throwable e) {
+                        exceptionHolder.set(e);
+                        status.setRollbackOnly();
                     }
-                }
-            } finally {
+                    return null;
+                });
                 latch.countDown();
-            }
-        });
+            };
 
-        // 사장님 스레드 (호출 시도)
-        executorService.execute(() -> {
-            try {
-                for (int i = 0; i < 10; i++) { // 여러 번 호출 시도
-                    callAttemptCount.incrementAndGet();
+            Runnable cancelTaskWithLock = () -> {
+                transactionTemplate.execute(status -> {
                     try {
-                        waitingService.updateWaitingStatus(storeId, waitingId, UpdateWaitingRequest.from(WaitingStatus.CALLED));
-                        callSuccessCount.incrementAndGet();
-                        // 호출 성공 시 루프 종료 (테스트 목적)
-                        break;
-                    } catch (Exception e) {
-                        log.warn("사장님 호출 시도 중 오류 발생: {}", e.getMessage());
-                        try {
-                            Thread.sleep(new Random().nextInt(100)); // 약간의 딜레이
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt(); // 인터럽트 상태를 다시 설정
-                            return; // 스레드 종료 또는 루프 탈출 등 추가적인 처리 고려
+                        Waiting lockedWaiting = waitingRepository.findByIdWithPessimisticLock(waitingId).orElseThrow();
+                        if (lockedWaiting.getStatus() == WaitingStatus.CALLED) {
+                            waitingService.cancelMyWaiting(user1.getId(), waitingId);
+                            userCancelSuccess.set(true);
                         }
+                    } catch (Throwable e) {
+                        exceptionHolder.set(e);
+                        status.setRollbackOnly();
                     }
-                }
-            } finally {
+                    return null;
+                });
                 latch.countDown();
+            };
+
+            executorService.submit(callTaskWithLock);
+            executorService.submit(cancelTaskWithLock);
+
+            latch.await();
+            executorService.shutdownNow();
+
+            // 각 반복마다 예외 발생 여부 확인
+            if (exceptionHolder.get() != null) {
+                log.error("[{}] 예외 발생: {}", i + 1, exceptionHolder.get().getMessage());
+                throw new AssertionError("[" + (i + 1) + "] 예외 발생: " + exceptionHolder.get().getMessage());
             }
-        });
 
-        latch.await();
+            Waiting result = waitingRepository.findById(waitingId).orElseThrow();
+            log.info("[{}] 최종 상태: {}", i + 1, result.getStatus());
+            log.info("[{}] 사장님 취소 성공: {}", i + 1, ownerCancelSuccess.get());
+            log.info("[{}] 사용자 취소 성공: {}", i + 1, userCancelSuccess.get());
 
-        Waiting updatedWaiting = waitingRepository.findById(waitingId).orElseThrow();
+            assertThat(ownerCancelSuccess.get() ^ userCancelSuccess.get()).isTrue();
 
-        log.info("취소 시도 횟수: {}", cancelAttemptCount.get());
-        log.info("호출 시도 횟수: {}", callAttemptCount.get());
-        log.info("취소 성공 횟수: {}", cancelSuccessCount.get());
-        log.info("호출 성공 횟수: {}", callSuccessCount.get());
-        log.info("최종 Waiting 상태: {}", updatedWaiting.getStatus());
-
-        // 비관적 락으로 인해 둘 중 하나의 작업만 최종적으로 성공해야 합니다.
-        Assertions.assertTrue((cancelSuccessCount.get() == 1 && callSuccessCount.get() == 0) ||
-                        (cancelSuccessCount.get() == 0 && callSuccessCount.get() == 1) ||
-                        (cancelSuccessCount.get() == 0 && callSuccessCount.get() == 0 && updatedWaiting.getStatus() == WaitingStatus.WAITING),
-                "취소 또는 호출 중 하나의 작업만 성공하거나, 초기 상태를 유지해야 합니다.");
-
-        if (cancelSuccessCount.get() == 1) {
-            Assertions.assertEquals(WaitingStatus.CANCELLED, updatedWaiting.getStatus());
-        } else if (callSuccessCount.get() == 1) {
-            Assertions.assertEquals(WaitingStatus.CALLED, updatedWaiting.getStatus());
+            if (ownerCancelSuccess.get()) {
+                assertThat(result.getStatus()).isEqualTo(WaitingStatus.CANCELLED);
+            } else if (userCancelSuccess.get()) {
+                assertThat(result.getStatus()).isEqualTo(WaitingStatus.CANCELLED);
+            } else {
+                assertThat(result.getStatus()).isEqualTo(WaitingStatus.CALLED);
+            }
+            waitingRepository.delete(result); // 각 반복 후 생성된 웨이팅 데이터 삭제
         }
-        // 둘 다 실패한 경우는 초기 상태를 유지해야 함 (비관적 락이 제대로 작동했다면)
+        log.info("반복 테스트 완료!");
     }
 
 }
