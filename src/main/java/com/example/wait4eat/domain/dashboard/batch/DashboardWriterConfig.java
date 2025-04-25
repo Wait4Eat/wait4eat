@@ -68,44 +68,6 @@ public class DashboardWriterConfig {
 
     @Bean
     @StepScope
-    public ItemWriter<StoreWaitingStats> popularStoreWriter() {
-        return new ItemWriter<StoreWaitingStats>() {
-            private final List<StoreWaitingStats> buffer = new ArrayList<>();
-
-            @Override
-            public void write(@NonNull Chunk<? extends StoreWaitingStats> items) throws Exception {
-                buffer.addAll(items.getItems());
-            }
-
-            @AfterStep
-            public void afterStep(StepExecution stepExecution) {
-                List<StoreWaitingStats> top10 = buffer.stream()
-                        .sorted(Comparator.comparing(StoreWaitingStats::getWaitingCount).reversed())
-                        .limit(10)
-                        .toList();
-
-                Dashboard dashboard = batchSupport.dashboardRepository
-                        .findByStatisticsDateOrElseThrow(batchSupport.getYesterday());
-
-                List<PopularStore> result = new ArrayList<>();
-                int rank = 1;
-                for (StoreWaitingStats stats : top10) {
-                    result.add(PopularStore.builder()
-                            .storeId(stats.getStore().getId())
-                            .storeName(stats.getStore().getName())
-                            .waitingCount(stats.getWaitingCount())
-                            .ranking(rank++)
-                            .dashboard(dashboard)
-                            .build());
-                }
-
-                batchSupport.popularStoreRepository.saveAll(result);
-            }
-        };
-    }
-
-    @Bean
-    @StepScope
     public ItemWriter<StoreSalesRank> storeSalesRankWriter() {
         return items -> {
             List<StoreSalesRank> itemList = StreamSupport.stream(items.spliterator(), false)

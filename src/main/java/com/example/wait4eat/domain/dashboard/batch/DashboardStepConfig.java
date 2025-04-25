@@ -19,9 +19,10 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class DashboardStepConfig {
     private final DashboardBatchSupport batchSupport;
-    protected final DashboardReaderConfig dashboardReaderConfig;
-    protected final DashboardProcessorConfig dashboardProcessorConfig;
-    protected final DashboardWriterConfig dashboardWriterConfig;
+    private final DashboardReaderConfig dashboardReaderConfig;
+    private final DashboardProcessorConfig dashboardProcessorConfig;
+    private final DashboardWriterConfig dashboardWriterConfig;
+    private final PopularStoreWriter popularStoreWriter;
 
     @Bean
     public Step userStatsStep(DashboardStatsAccumulator dashboardStatsAccumulator) {
@@ -72,10 +73,10 @@ public class DashboardStepConfig {
     @Bean
     public Step updatePopularStoreStep() {
         return new StepBuilder("updatePopularStoreStep", batchSupport.jobRepository)
-                .<Store, StoreWaitingStats>chunk(10, batchSupport.transactionManager)
+                .<Store, StoreWaitingStats>chunk(1000, batchSupport.transactionManager)
                 .reader(dashboardReaderConfig.storeReader())
                 .processor(dashboardProcessorConfig.popularStoreProcessor())
-                .writer(dashboardWriterConfig.popularStoreWriter())
+                .writer(popularStoreWriter)
                 .build();
     }
 
