@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,16 +30,25 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
     private final JPAQueryFactory queryFactory;
     private final RedisTemplate<String, Long> waitingIdRedisTemplate; // Long 타입 RedisTemplate
-    private static final String WAITING_QUEUE_KEY_PREFIX = "waiting:queue:store:";
+    private static final String WAITING_STORE_KEY_PREFIX = "waiting:store:";
+    private static final String WAITING_DATE_FORMAT = "yyyyMMdd";
 
-    @Override
+    // 현재 날짜를 기준으로 Redis Key 생성
+    private String generateWaitingStoreKey(Long storeId) {
+        LocalDate today = LocalDate.now();
+        return WAITING_STORE_KEY_PREFIX + storeId + ":" + today.format(DateTimeFormatter.ofPattern(WAITING_DATE_FORMAT));
+    }
+
     // 특정 가게의 주어진 상태에 해당하는 웨이팅 수 조회
+    @Override
     public int countByStoreIdAndStatus(Long storeId, WaitingStatus status) {
+
         // WAITING 상태에 대한 카운트는 Sorted Set의 크기
         if (status == WaitingStatus.WAITING) {
-            Long size = waitingIdRedisTemplate.opsForZSet().zCard(WAITING_QUEUE_KEY_PREFIX + storeId);
+            Long size = waitingIdRedisTemplate.opsForZSet().zCard(generateWaitingStoreKey(storeId));
             return size != null ? size.intValue() : 0;
         }
+
         // 다른 상태에 대한 카운트는 DB에서 조회
         Integer count = queryFactory
                 .select(waiting.count().intValue())
@@ -51,17 +62,18 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
         return Optional.ofNullable(count).orElse(0);
     }
 
-    @Override
     // 매장 ID와 웨이팅 ID를 사용하여 대기 번호 조회
+    @Override
     public Long getUserWaitingRank(Long storeId, Long waitingId) {
+
         boolean isMember = waitingIdRedisTemplate.opsForZSet()
-                .rank(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId) != null;
+                .rank(generateWaitingStoreKey(storeId), waitingId) != null;
 
         if (!isMember) {
             return null; // 이미 호출되었거나 대기열에 없음
         }
 
-        Long rank = waitingIdRedisTemplate.opsForZSet().rank(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId);
+        Long rank = waitingIdRedisTemplate.opsForZSet().rank(generateWaitingStoreKey(storeId), waitingId);
         return rank != null ? rank + 1 : null; // Redis의 rank()는 0부터 시작하므로 +1 해서 순위 표시
     }
 
@@ -129,7 +141,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
         // Redis ZSet: Size -> waitingTeamCount, Rank -> myWaitingOrder
         if (waitingResult != null) {
-            Long storeId = waitingResult.getStore().getId(); // waitingResult에서 storeId를 가져옴
+            Long storeId = waitingResult.getStore().getId();
             Long waitingId = waitingResult.getId();
 
             int currentWaitingTeamCount = countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);

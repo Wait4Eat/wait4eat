@@ -22,11 +22,12 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -36,11 +37,12 @@ public class WaitingServiceImpl implements WaitingService {
     private final WaitingRepository waitingRepository;
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
-    private final RedisTemplate<String, String> redisTemplate;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     private final RedisTemplate<String, Long> waitingIdRedisTemplate;
-    private static final String WAITING_QUEUE_KEY_PREFIX = "waiting:queue:store:";
+    private static final String WAITING_STORE_KEY_PREFIX = "waiting:store:";
+    private static final String WAITING_DATE_FORMAT = "yyyyMMdd";
+    private static final LocalTime EXPIRATION_TIME = LocalTime.of(3, 0, 0); // 새벽 3시
 
 
     // 웨이팅 상태 순서 정의
@@ -155,7 +157,7 @@ public class WaitingServiceImpl implements WaitingService {
     }
 
     @Override
-    @Transactional
+    //@Transactional
     public boolean updateWaiting(WaitingStatus newStatus, Waiting waiting) {
         WaitingStatus currentStatus = waiting.getStatus();
 
@@ -208,22 +210,38 @@ public class WaitingServiceImpl implements WaitingService {
         return updated;
     }
 
+    private String generateWaitingStoreKey(Long storeId) {
+        LocalDate today = LocalDate.now();
+        return WAITING_STORE_KEY_PREFIX + storeId + ":" + today.format(DateTimeFormatter.ofPattern(WAITING_DATE_FORMAT));
+    }
+
+    private void setExpiration(String key) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expirationDateTime = LocalDate.now().atTime(EXPIRATION_TIME);
+        if (now.isAfter(expirationDateTime)) {
+            expirationDateTime = expirationDateTime.plusDays(1); // 이미 오늘 새벽 3시가 지났으면 다음 날 새벽 3시로 설정
+        }
+        long ttl = Duration.between(now, expirationDateTime).getSeconds();
+        waitingIdRedisTemplate.expire(key, ttl, TimeUnit.SECONDS);
+    }
+
     // REQUESTED -> WAITING: 가게 웨이팅 팀 수 증가, 호출된 사용자의 웨이팅 순서 + 1, 레디스 제트셋에 추가
     private void handleWaiting(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
         waiting.waiting(getCurrentTime());
         waitingRepository.save(waiting);  // 현재 상태를 먼저 저장
 
+        String key = generateWaitingStoreKey(storeId);
         // Redis에 activatedAt을 밀리초로 변환한 값을 score로 넣어 저장
         waitingIdRedisTemplate.opsForZSet().add(
-                WAITING_QUEUE_KEY_PREFIX + storeId,
+                key,
                 waiting.getId(),
                 waiting.getActivatedAt().toInstant(ZoneOffset.UTC).toEpochMilli()
         );
+        setExpiration(key);
 
-        int currentSize = waitingRepository.countByStoreIdAndStatus(storeId, WaitingStatus.WAITING);
-        // int currentSize = getCurrentWaitingTeamCount(storeId);
-        log.info("가게 {} 웨이팅 팀 추가됨: {} (현재 대기열 크기: {})", storeId, waiting.getId(), currentSize);
+        int currentSize = getCurrentWaitingTeamCount(storeId);
+        log.info("가게 {} 웨이팅 팀 추가됨 (Redis Key: {}): {} (현재 대기열 크기: {})", storeId, key, waiting.getId(), currentSize);
     }
 
     // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0, 레디스 제트셋에서 제거
@@ -232,20 +250,21 @@ public class WaitingServiceImpl implements WaitingService {
 
         Long storeId = waiting.getStore().getId();
         Long waitingId = waiting.getId();
+        String key = generateWaitingStoreKey(storeId);
 
         // 상태 변경
         waiting.call(getCurrentTime());
         waiting.markAsCalled();
+        waitingRepository.save(waiting);
+
         int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
         log.info("가게 {} 웨이팅 팀 호출됨. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
 
         applicationEventPublisher.publishEvent(WaitingCalledEvent.from(waiting));
 
-        waitingRepository.save(waiting);
-
         // Redis에서 제거
-        waitingIdRedisTemplate.opsForZSet().remove(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId);
-        log.info("가게 {} 웨이팅 팀 호출됨: {}", storeId, waitingId);
+        waitingIdRedisTemplate.opsForZSet().remove(key, waitingId);
+        log.info("가게 {} 웨이팅 팀 호출됨 (Redis Key: {}): {}", storeId, key, waitingId);
     }
 
     // REQUESTED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지, 레디스에 영향 없음
@@ -253,21 +272,22 @@ public class WaitingServiceImpl implements WaitingService {
         Long storeId = waiting.getStore().getId();
         waiting.cancel(getCurrentTime());
         waitingRepository.save(waiting);
-        log.info("가게 {} 웨이팅 요청 취소됨 (결제 전): {}", storeId, waiting.getId());
+        log.info("가게 {} 결제 전 웨이팅 요청 취소됨: {}", storeId, waiting.getId());
     }
 
     // WAITING -> CANCELLED: 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지, 레디스 제트셋에서 제거
     private void handleWaitingToCancelled(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
         Long waitingId = waiting.getId();
+        String key = generateWaitingStoreKey(storeId);
 
         // 상태 변경
         waiting.cancel(getCurrentTime());
         waitingRepository.save(waiting);
 
         // Redis에서 제거
-        waitingIdRedisTemplate.opsForZSet().remove(WAITING_QUEUE_KEY_PREFIX + storeId, waitingId);
-        log.info("가게 {} 웨이팅 취소됨 (대기 중): {}", storeId, waitingId);
+        waitingIdRedisTemplate.opsForZSet().remove(key, waitingId);
+        log.info("가게 {} 대기 중인 웨이팅 취소됨 (Redis Key: {}): {}", storeId, key, waitingId);
     }
 
     // CALLED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지, 레디스에 영향 없음
@@ -275,7 +295,7 @@ public class WaitingServiceImpl implements WaitingService {
         Long storeId = waiting.getStore().getId();
         waiting.cancel(getCurrentTime());
         waitingRepository.save(waiting);
-        log.info("가게 {} 웨이팅 취소됨 (호출 상태): {}", storeId, waiting.getId());
+        log.info("가게 {} 호출 상태인 웨이팅 취소됨: {}", storeId, waiting.getId());
     }
 
     // CALLED -> COMPLETED: 가게 웨이팅 팀 수 그대로, 입장한 사용자의 웨이팅 순서 0, 레디스에 영향 없음
@@ -291,20 +311,22 @@ public class WaitingServiceImpl implements WaitingService {
     private void validateCanBeCalled(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
         Long waitingId = waiting.getId();
+        String key = generateWaitingStoreKey(storeId);
 
         // Redis에서 가장 앞 순서의 대기 ID 확인
         Set<Long> first = waitingIdRedisTemplate.opsForZSet()
-                .range(WAITING_QUEUE_KEY_PREFIX + storeId, 0, 0);
+                .range(key, 0, 0);
 
         if (first == null || first.isEmpty() || !first.iterator().next().equals(waitingId)) {
             throw new CustomException(ExceptionType.NOT_FIRST_IN_WAITING_QUEUE);
         }
     }
 
-    @Override
     // 가게의 현재 '대기 중'인 웨이팅팀 수
+    @Override
     public int getCurrentWaitingTeamCount(Long storeId) {
-        Long size = waitingIdRedisTemplate.opsForZSet().zCard(WAITING_QUEUE_KEY_PREFIX + storeId);
+        String key = generateWaitingStoreKey(storeId);
+        Long size = waitingIdRedisTemplate.opsForZSet().zCard(key);
         return size != null ? size.intValue() : 0;
     }
 
