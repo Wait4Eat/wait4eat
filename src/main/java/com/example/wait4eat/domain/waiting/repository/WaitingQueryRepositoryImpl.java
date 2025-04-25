@@ -5,6 +5,7 @@ import com.example.wait4eat.domain.waiting.dto.response.MyWaitingResponse;
 import com.example.wait4eat.domain.waiting.dto.response.WaitingResponse;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
+import com.example.wait4eat.global.util.QuerydslSortUtils;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.example.wait4eat.domain.user.entity.QUser.user;
 import static com.example.wait4eat.domain.store.entity.QStore.store;
+import static com.example.wait4eat.domain.user.entity.QUser.user;
 import static com.example.wait4eat.domain.waiting.entity.QWaiting.waiting;
 
 @Repository
@@ -107,6 +108,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .join(waiting.store, store).fetchJoin()
                 .join(waiting.user, user).fetchJoin()
                 .where(waiting.id.in(waitingIds))
+                .orderBy(QuerydslSortUtils.getSort(pageable, waiting))
                 .fetch();
 
         // 3. 조회된 Waiting 엔티티 리스트를 WaitingResponse로 변환
@@ -179,6 +181,7 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
                 .join(waiting.store, store).fetchJoin()
                 .join(waiting.user, user).fetchJoin()
                 .where(waiting.id.in(waitingIds))
+                .orderBy(QuerydslSortUtils.getSort(pageable, waiting))
                 .fetch();
 
         List<MyPastWaitingResponse> content = waitings.stream()
@@ -197,4 +200,5 @@ public class WaitingQueryRepositoryImpl implements WaitingQueryRepository {
 
         return new PageImpl<>(content, pageable, total);
     }
+
 }
