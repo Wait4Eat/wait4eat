@@ -1,4 +1,4 @@
-package com.example.wait4eat.domain.dashboard.batch;
+package com.example.wait4eat.domain.dashboard.dto;
 
 import lombok.Getter;
 

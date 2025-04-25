@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
+import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
 import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
@@ -24,13 +25,13 @@ import java.util.stream.StreamSupport;
 @Configuration
 @RequiredArgsConstructor
 public class DashboardWriterConfig {
-    private final DashboardBatchSupport BatchSupport;
+    private final DashboardBatchSupport batchSupport;
 
     @Bean
     public ItemWriter<User> userStatsWriter(DashboardStatsAccumulator accumulator) {
         return users -> {
             for (User user : users) {
-                boolean isLoginYesterday = user.getLoginDate() != null && user.getLoginDate().equals(BatchSupport.getYesterday());
+                boolean isLoginYesterday = user.getLoginDate() != null && user.getLoginDate().equals(batchSupport.getYesterday());
 
                 accumulator.addUser(isLoginYesterday);
             }
@@ -42,7 +43,7 @@ public class DashboardWriterConfig {
         return stores -> {
             for (Store store : stores) {
                 boolean isCreatedYesterday = store.getCreatedAt() != null &&
-                        store.getCreatedAt().toLocalDate().equals(BatchSupport.getYesterday());
+                        store.getCreatedAt().toLocalDate().equals(batchSupport.getYesterday());
 
                 accumulator.addStore(isCreatedYesterday);
             }
@@ -67,7 +68,7 @@ public class DashboardWriterConfig {
         return new ItemWriter<Dashboard>() {
             @Override
             public void write(@NonNull Chunk<? extends Dashboard> items) throws Exception {
-                BatchSupport.dashboardRepository.saveAll(items);
+                batchSupport.dashboardRepository.saveAll(items);
             }
         };
     }
@@ -75,7 +76,7 @@ public class DashboardWriterConfig {
     @Bean
     @StepScope
     public ItemWriter<PopularStore> popularStoreWriter() {
-        return BatchSupport.popularStoreRepository::saveAll;
+        return batchSupport.popularStoreRepository::saveAll;
     }
 
     @Bean
@@ -90,7 +91,7 @@ public class DashboardWriterConfig {
                 itemList.get(i).setRanking(i+1);
             }
 
-            BatchSupport.storeSalesRankRepository.saveAll(itemList);
+            batchSupport.storeSalesRankRepository.saveAll(itemList);
         };
     }
 }
