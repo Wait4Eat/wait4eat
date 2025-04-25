@@ -33,7 +33,7 @@ public class DashboardBatchSupport {
     protected final StoreSalesRankRepository storeSalesRankRepository;
 
     protected LocalDate getYesterday() {
-        return LocalDate.now();
+        return LocalDate.now().minusDays(1);
     }
 
     protected LocalDateTime getStartDate() {

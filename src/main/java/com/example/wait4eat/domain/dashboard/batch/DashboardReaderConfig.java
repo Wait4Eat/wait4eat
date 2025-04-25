@@ -1,6 +1,5 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
-import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
 import com.example.wait4eat.domain.payment.entity.Payment;
 import com.example.wait4eat.domain.payment.enums.PaymentStatus;
 import com.example.wait4eat.domain.store.entity.Store;
@@ -60,22 +59,6 @@ public class DashboardReaderConfig {
                 ))
                 .pageSize(1000)
                 .build();
-    }
-
-    @Bean
-    public ItemReader<DashboardStatsAccumulator> accumulatorReader(DashboardStatsAccumulator accumulator) {
-        return new ItemReader<>() {
-            private boolean read = false;
-
-            @Override
-            public DashboardStatsAccumulator read() {
-                if (!read) {
-                    read = true;
-                    return accumulator;
-                }
-                return null; // 종료 시그널
-            }
-        };
     }
 
     @Bean
