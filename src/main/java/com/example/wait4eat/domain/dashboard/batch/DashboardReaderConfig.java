@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
+import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
 import com.example.wait4eat.domain.payment.entity.Payment;
 import com.example.wait4eat.domain.payment.enums.PaymentStatus;
 import com.example.wait4eat.domain.store.entity.Store;
@@ -23,7 +24,7 @@ import java.util.Map;
 @Configuration
 @RequiredArgsConstructor
 public class DashboardReaderConfig {
-    private final DashboardBatchSupport BatchSupport;
+    private final DashboardBatchSupport batchSupport;
 
     @Bean
     public JpaPagingItemReader<User> userStatsReader(EntityManagerFactory entityManagerFactory) {
@@ -50,12 +51,12 @@ public class DashboardReaderConfig {
     public JpaPagingItemReader<Payment> paymentStatsReader() {
         return new JpaPagingItemReaderBuilder<Payment>()
                 .name("paymentStatsReader")
-                .entityManagerFactory(BatchSupport.entityManagerFactory)
+                .entityManagerFactory(batchSupport.entityManagerFactory)
                 .queryString("SELECT p FROM Payment p WHERE p.status = :status AND p.paidAt BETWEEN :startDate AND :endDate")
                 .parameterValues(Map.of(
                         "status", PaymentStatus.PAID,
-                        "startDate", BatchSupport.getStartDate(),
-                        "endDate", BatchSupport.getEndDate()
+                        "startDate", batchSupport.getStartDate(),
+                        "endDate", batchSupport.getEndDate()
                 ))
                 .pageSize(1000)
                 .build();
@@ -80,9 +81,9 @@ public class DashboardReaderConfig {
     @Bean
     @StepScope
     public ListItemReader<Store> popularStoreReader() {
-        LocalDateTime startDate = BatchSupport.getStartDate();
-        LocalDateTime endDate = BatchSupport.getEndDate();
-        List<Store> popularStores = BatchSupport.storeRepository
+        LocalDateTime startDate = batchSupport.getStartDate();
+        LocalDateTime endDate = batchSupport.getEndDate();
+        List<Store> popularStores = batchSupport.storeRepository
                 .findTop10StoresByWaitingCount(startDate, endDate, PageRequest.of(0, 10));
         return new ListItemReader<>(popularStores);
     }
@@ -90,7 +91,7 @@ public class DashboardReaderConfig {
     @Bean
     @StepScope
     public ListItemReader<Store> storeSalesRankReader() {
-        List<Store> stores = BatchSupport.storeRepository.findAll();
+        List<Store> stores = batchSupport.storeRepository.findAll();
         return new ListItemReader<>(stores);
     }
 }
