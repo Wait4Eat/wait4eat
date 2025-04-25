@@ -1,6 +1,7 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
 import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
+import com.example.wait4eat.domain.dashboard.dto.StoreWaitingStats;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
 import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
@@ -71,8 +72,8 @@ public class DashboardStepConfig {
     @Bean
     public Step updatePopularStoreStep() {
         return new StepBuilder("updatePopularStoreStep", batchSupport.jobRepository)
-                .<Store, PopularStore>chunk(10, batchSupport.transactionManager)
-                .reader(dashboardReaderConfig.popularStoreReader())
+                .<Store, StoreWaitingStats>chunk(10, batchSupport.transactionManager)
+                .reader(dashboardReaderConfig.storeReader())
                 .processor(dashboardProcessorConfig.popularStoreProcessor())
                 .writer(dashboardWriterConfig.popularStoreWriter())
                 .build();
@@ -82,7 +83,7 @@ public class DashboardStepConfig {
     public Step updateStoreSalesRankStep() {
         return new StepBuilder("updateStoreSalesRankStep", batchSupport.jobRepository)
                 .<Store, StoreSalesRank>chunk(1000, batchSupport.transactionManager)
-                .reader(dashboardReaderConfig.storeSalesRankReader())
+                .reader(dashboardReaderConfig.storeReader())
                 .processor(dashboardProcessorConfig.storeSalesRankProcessor())
                 .writer(dashboardWriterConfig.storeSalesRankWriter())
                 .build();
