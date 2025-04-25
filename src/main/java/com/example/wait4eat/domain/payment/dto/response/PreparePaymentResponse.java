@@ -12,8 +12,8 @@ public class PreparePaymentResponse {
     private final BigDecimal amount;
     private final String customerKey;
     private final String shopName;
-    private final String successUrl;
-    private final String failUrl;
+    private final String successPath;
+    private final String failPath;
 
     @Builder
     public PreparePaymentResponse(
@@ -22,15 +22,15 @@ public class PreparePaymentResponse {
             BigDecimal amount,
             String customerKey,
             String shopName,
-            String successUrl,
-            String failUrl
+            String successPath,
+            String failPath
     ) {
         this.orderId = orderId;
         this.originalAmount = originalAmount;
         this.amount = amount;
         this.customerKey = customerKey;
         this.shopName = shopName;
-        this.successUrl = successUrl;
-        this.failUrl = failUrl;
+        this.successPath = successPath;
+        this.failPath = failPath;
     }
 }

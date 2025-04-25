@@ -1,6 +1,7 @@
 package com.example.wait4eat.domain.payment.service;
 
 import com.example.wait4eat.domain.coupon.entity.Coupon;
+import com.example.wait4eat.domain.payment.consts.PaymentEndpoint;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.domain.coupon.repository.CouponRepository;
@@ -16,6 +17,8 @@ import com.example.wait4eat.domain.payment.repository.PaymentRepository;
 import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import com.example.wait4eat.global.auth.dto.AuthUser;
+import com.example.wait4eat.global.exception.CustomException;
+import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,17 +44,17 @@ public class PaymentServiceImpl implements PaymentService {
     public PreparePaymentResponse preparePayment(PreparePaymentRequest request) {
         AuthUser authUser = (AuthUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userRepository.findByEmail(authUser.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("로그인 사용자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ExceptionType.USER_NOT_FOUND));
 
         Waiting waiting = waitingRepository.findById(request.getWaitingId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 웨이팅입니다."));
+                .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
         if (!waiting.getUser().getId().equals(user.getId())) {
-            throw new IllegalStateException("해당 웨이팅은 현재 로그인한 사용자의 것이 아닙니다.");
+            throw new CustomException(ExceptionType.NO_PERMISSION_ACTION, "웨이팅 당사자만 결제가 가능합니다.");
         }
 
         Coupon coupon = couponRepository.findById(request.getCouponId())
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 쿠폰입니다."));
+                .orElseThrow(() -> new CustomException(ExceptionType.COUPON_NOT_FOUND));
 
         int originalAmount = waiting.getStore().getDepositAmount();
         int discountAmount = coupon.getDiscountAmount().intValue();
@@ -63,8 +66,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .amount(BigDecimal.valueOf(amount))
                 .customerKey("user-" + user.getId())
                 .shopName(waiting.getStore().getName())
-                .successUrl("http://localhost:8080/api/v1/payments/success")
-                .failUrl("http://localhost:8080/api/v1/payments/fail")
+                .successPath(PaymentEndpoint.SUCCESS_PATH)
+                .failPath(PaymentEndpoint.FAIL_PATH)
                 .build();
     }
 
