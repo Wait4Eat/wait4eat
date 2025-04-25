@@ -26,7 +26,7 @@ public class PopularStore {
     private String storeName;
 
     @Column(nullable = false)
-    private int waitingCount;
+    private Long waitingCount;
 
     @Column(nullable = false)
     private int ranking;
@@ -39,7 +39,7 @@ public class PopularStore {
     public PopularStore(
             Long storeId,
             String storeName,
-            int waitingCount,
+            Long waitingCount,
             int ranking,
             PopularityType type,
             Dashboard dashboard

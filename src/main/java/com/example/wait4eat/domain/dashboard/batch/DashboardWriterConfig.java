@@ -1,18 +1,25 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
 import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
+import com.example.wait4eat.domain.dashboard.dto.StoreWaitingStats;
+import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
 import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
 import com.example.wait4eat.domain.payment.entity.Payment;
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.user.entity.User;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -61,8 +68,40 @@ public class DashboardWriterConfig {
 
     @Bean
     @StepScope
-    public ItemWriter<PopularStore> popularStoreWriter() {
-        return batchSupport.popularStoreRepository::saveAll;
+    public ItemWriter<StoreWaitingStats> popularStoreWriter() {
+        return new ItemWriter<StoreWaitingStats>() {
+            private final List<StoreWaitingStats> buffer = new ArrayList<>();
+
+            @Override
+            public void write(@NonNull Chunk<? extends StoreWaitingStats> items) throws Exception {
+                buffer.addAll(items.getItems());
+            }
+
+            @AfterStep
+            public void afterStep(StepExecution stepExecution) {
+                List<StoreWaitingStats> top10 = buffer.stream()
+                        .sorted(Comparator.comparing(StoreWaitingStats::getWaitingCount).reversed())
+                        .limit(10)
+                        .toList();
+
+                Dashboard dashboard = batchSupport.dashboardRepository
+                        .findByStatisticsDateOrElseThrow(batchSupport.getYesterday());
+
+                List<PopularStore> result = new ArrayList<>();
+                int rank = 1;
+                for (StoreWaitingStats stats : top10) {
+                    result.add(PopularStore.builder()
+                            .storeId(stats.getStore().getId())
+                            .storeName(stats.getStore().getName())
+                            .waitingCount(stats.getWaitingCount())
+                            .ranking(rank++)
+                            .dashboard(dashboard)
+                            .build());
+                }
+
+                batchSupport.popularStoreRepository.saveAll(result);
+            }
+        };
     }
 
     @Bean
