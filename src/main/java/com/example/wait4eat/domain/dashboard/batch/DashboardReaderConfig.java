@@ -26,7 +26,7 @@ public class DashboardReaderConfig {
     private final DashboardBatchSupport batchSupport;
 
     @Bean
-    public JpaPagingItemReader<User> userStatsReader(EntityManagerFactory entityManagerFactory) {
+    public ItemReader<User> userStatsReader(EntityManagerFactory entityManagerFactory) {
         return new JpaPagingItemReaderBuilder<User>()
                 .name("userStatsReader")
                 .entityManagerFactory(entityManagerFactory)
@@ -47,7 +47,7 @@ public class DashboardReaderConfig {
     }
 
     @Bean
-    public JpaPagingItemReader<Payment> paymentStatsReader() {
+    public ItemReader<Payment> paymentStatsReader() {
         return new JpaPagingItemReaderBuilder<Payment>()
                 .name("paymentStatsReader")
                 .entityManagerFactory(batchSupport.entityManagerFactory)
@@ -63,18 +63,12 @@ public class DashboardReaderConfig {
 
     @Bean
     @StepScope
-    public ListItemReader<Store> popularStoreReader() {
-        LocalDateTime startDate = batchSupport.getStartDate();
-        LocalDateTime endDate = batchSupport.getEndDate();
-        List<Store> popularStores = batchSupport.storeRepository
-                .findTop10StoresByWaitingCount(startDate, endDate, PageRequest.of(0, 10));
-        return new ListItemReader<>(popularStores);
-    }
-
-    @Bean
-    @StepScope
-    public ListItemReader<Store> storeSalesRankReader() {
-        List<Store> stores = batchSupport.storeRepository.findAll();
-        return new ListItemReader<>(stores);
+    public JpaPagingItemReader<Store> storeReader() {
+        return new JpaPagingItemReaderBuilder<Store>()
+                .name("storeSalesRankReader")
+                .entityManagerFactory(batchSupport.entityManagerFactory)
+                .queryString("SELECT s FROM STORE S")
+                .pageSize(1000)
+                .build();
     }
 }
