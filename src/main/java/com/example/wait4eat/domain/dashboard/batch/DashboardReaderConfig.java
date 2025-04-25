@@ -67,7 +67,7 @@ public class DashboardReaderConfig {
         return new JpaPagingItemReaderBuilder<Store>()
                 .name("storeSalesRankReader")
                 .entityManagerFactory(batchSupport.entityManagerFactory)
-                .queryString("SELECT s FROM STORE S")
+                .queryString("SELECT s FROM Store s")
                 .pageSize(1000)
                 .build();
     }
