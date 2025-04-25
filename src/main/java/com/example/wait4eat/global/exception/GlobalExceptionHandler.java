@@ -3,6 +3,8 @@ package com.example.wait4eat.global.exception;
 import com.example.wait4eat.global.dto.response.ErrorResponse;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.query.sqm.PathElementException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -71,6 +73,18 @@ public class GlobalExceptionHandler {
         log.warn("Access Denied: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ErrorResponse.from(new CustomException(ExceptionType.NO_PERMISSION_ACTION)));
+    }
+
+    // 잘못된 정렬 파라미터로 인해 발생하는 예외 처리
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    public ResponseEntity<ErrorResponse> invalidDataAccessApiUsageException(InvalidDataAccessApiUsageException e) {
+        log.warn("InvalidDataAccessApiUsageException: {}", e.getMessage());
+        ExceptionType exceptionType = ExceptionType.INVALID_PARAMETER;
+        if (e.getRootCause() instanceof PathElementException) {
+            exceptionType = ExceptionType.INVALID_SORT_PARAMETER;
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.from(new CustomException(exceptionType)));
     }
 
     @ExceptionHandler(Exception.class)

@@ -9,6 +9,7 @@ public enum ExceptionType {
     // Validation / Request Errors
     REQUEST_VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "요청값 검증에 실패했습니다."),
     REQUEST_FORMAT_INVALID(HttpStatus.BAD_REQUEST, "요청 형식이 올바르지 않습니다. "),
+    INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "올바르지 않은 요청입니다"),
 
     // Auth
     AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
@@ -59,6 +60,7 @@ public enum ExceptionType {
     SINGLE_WAIT_ALLOWED(HttpStatus.BAD_REQUEST, "한 번에 하나의 웨이팅만 허용됩니다."),
     NO_PERMISSION_TO_ACCESS_STORE_WAITING(HttpStatus.FORBIDDEN, "해당 가게 웨이팅 조회 권한이 없습니다"),
     NOT_FIRST_IN_WAITING_QUEUE(HttpStatus.BAD_REQUEST, "현재 대기열에서 첫 번째 웨이팅이 아닙니다"),
+    INVALID_SORT_PARAMETER(HttpStatus.BAD_REQUEST, "올바르지 않은 정렬값입니다"),
 
     // StoreWishlist
     STORE_WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 위시리스트를 찾을 수 없습니다."),
