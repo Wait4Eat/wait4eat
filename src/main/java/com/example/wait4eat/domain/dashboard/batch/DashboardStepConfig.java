@@ -10,6 +10,7 @@ import com.example.wait4eat.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -49,12 +50,21 @@ public class DashboardStepConfig {
     }
 
     @Bean
-    public Step saveDashboardStep(DashboardStatsAccumulator dashboardStatsAccumulator) {
+    public Step saveDashboardStep(DashboardStatsAccumulator accumulator) {
         return new StepBuilder("saveDashboardStep", batchSupport.jobRepository)
-                .<DashboardStatsAccumulator, Dashboard>chunk(1, batchSupport.transactionManager)
-                .reader(dashboardReaderConfig.accumulatorReader(dashboardStatsAccumulator))
-                .processor(dashboardProcessorConfig.dashboardStatsAccumulatorProcessor())
-                .writer(dashboardWriterConfig.dashboardWriter())
+                .tasklet((contribution, chunkContext) -> {
+                    Dashboard dashboard = Dashboard.builder()
+                            .totalUserCount(accumulator.getTotalUserCount())
+                            .dailyUserCount(accumulator.getDailyUserCount())
+                            .totalStoreCount(accumulator.getTotalStoreCount())
+                            .dailyNewStoreCount(accumulator.getDailyNewStoreCount())
+                            .dailyTotalSales(accumulator.getTotalDailySales())
+                            .statisticsDate(batchSupport.getYesterday())
+                            .build();
+
+                    batchSupport.dashboardRepository.save(dashboard);
+                    return RepeatStatus.FINISHED;
+                }, batchSupport.transactionManager)
                 .build();
     }
 

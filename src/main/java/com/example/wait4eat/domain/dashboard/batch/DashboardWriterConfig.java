@@ -1,7 +1,6 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
 import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
-import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
 import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
 import com.example.wait4eat.domain.payment.entity.Payment;
@@ -9,11 +8,9 @@ import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.lang.NonNull;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -59,17 +56,6 @@ public class DashboardWriterConfig {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             accumulator.addPayment(totalSales);
-        };
-    }
-
-
-    @Bean
-    public ItemWriter<Dashboard> dashboardWriter() {
-        return new ItemWriter<Dashboard>() {
-            @Override
-            public void write(@NonNull Chunk<? extends Dashboard> items) throws Exception {
-                batchSupport.dashboardRepository.saveAll(items);
-            }
         };
     }
 
