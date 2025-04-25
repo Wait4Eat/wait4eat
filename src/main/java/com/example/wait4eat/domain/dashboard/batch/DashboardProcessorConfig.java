@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
+import com.example.wait4eat.domain.dashboard.dto.StoreWaitingStats;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
 import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
@@ -20,25 +21,14 @@ public class DashboardProcessorConfig {
 
     @Bean
     @StepScope
-    public ItemProcessor<Store, PopularStore> popularStoreProcessor() {
-        return new ItemProcessor<>() {
-            private int rank = 1;
-
-            @Override
-            public PopularStore process(@NonNull Store store) {
-                int waitingCount = batchSupport.waitingRepository
-                        .countByStoreAndCreatedAtBetween(store, batchSupport.getStartDate(), batchSupport.getEndDate());
-                Dashboard dashboard = batchSupport.dashboardRepository
-                        .findByStatisticsDateOrElseThrow(batchSupport.getYesterday());
-
-                return PopularStore.builder()
-                        .storeId(store.getId())
-                        .storeName(store.getName())
-                        .waitingCount(waitingCount)
-                        .ranking(rank++)
-                        .dashboard(dashboard)
-                        .build();
-            }
+    public ItemProcessor<Store, StoreWaitingStats> popularStoreProcessor() {
+        return store -> {
+            long waitingCount = batchSupport.waitingRepository
+                    .countByStoreAndCreatedAtBetween(store, batchSupport.getStartDate(), batchSupport.getEndDate());
+            return StoreWaitingStats.builder()
+                    .store(store)
+                    .waitingCount(waitingCount)
+                    .build();
         };
     }
 
@@ -56,7 +46,7 @@ public class DashboardProcessorConfig {
                 return StoreSalesRank.builder()
                         .storeId(store.getId())
                         .storeName(store.getName())
-                        .totalSales(totalSales)
+                        .totalSales(totalSales == null ? BigDecimal.ZERO : totalSales)
                         .dashboard(findDashboard)
                         .ranking(0)
                         .build();
