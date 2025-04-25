@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
+import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
 import com.example.wait4eat.domain.dashboard.repository.DashboardRepository;
 import com.example.wait4eat.domain.dashboard.repository.PopularStoreRepository;
 import com.example.wait4eat.domain.dashboard.repository.StoreSalesRankRepository;
