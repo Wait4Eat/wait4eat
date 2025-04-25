@@ -13,9 +13,12 @@ import com.example.wait4eat.domain.waiting.event.WaitingCalledEvent;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
+import jakarta.persistence.LockTimeoutException;
+import jakarta.persistence.PessimisticLockException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -118,42 +121,54 @@ public class WaitingServiceImpl implements WaitingService {
     @Override
     @Transactional
     public CancelWaitingResponse cancelMyWaiting(Long userId, Long waitingId) {
+        try {
 
-        // 비관적 락으로 웨이팅 정보 가져오기
-        Waiting waiting = waitingRepository.findByIdWithPessimisticLock(waitingId)
-                .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
+            // 비관적 락으로 웨이팅 정보 가져오기
+            Waiting waiting = waitingRepository.findByIdWithPessimisticLock(waitingId)
+                    .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
+            if (!waiting.getUser().getId().equals(userId)) {
+                throw new CustomException(ExceptionType.UNAUTHORIZED_CANCEL_WAITING);
+            }
 
-        if (!waiting.getUser().getId().equals(userId)) {
-            throw new CustomException(ExceptionType.UNAUTHORIZED_CANCEL_WAITING);
+            if (waiting.getStatus() == WaitingStatus.CANCELLED || waiting.getStatus() == WaitingStatus.COMPLETED) {
+                throw new CustomException(ExceptionType.ALREADY_FINISHED_WAITING);
+            }
+
+            updateWaiting(WaitingStatus.CANCELLED, waiting);
+
+            return CancelWaitingResponse.from(waiting);
+
+        } catch (Exception e) {
+            log.error("cancelMyWaiting 중 예외 발생: {}", e.getMessage());
+            handleLockingExceptions(e);
+            throw e;
         }
-
-        if (waiting.getStatus() == WaitingStatus.CANCELLED || waiting.getStatus() == WaitingStatus.COMPLETED) {
-            throw new CustomException(ExceptionType.ALREADY_FINISHED_WAITING);
-        }
-
-        updateWaiting(WaitingStatus.CANCELLED, waiting);
-
-        return CancelWaitingResponse.from(waiting);
     }
 
     @Override
     @Transactional
     public UpdateWaitingResponse updateWaitingStatus(Long userId, Long waitingId, UpdateWaitingRequest updateWaitingRequest) {
+        try {
+            // 비관적 락으로 웨이팅 정보 가져오기
+            Waiting waiting = waitingRepository.findByIdWithPessimisticLock(waitingId)
+                    .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
-        // 비관적 락으로 웨이팅 정보 가져오기
-        Waiting waiting = waitingRepository.findByIdWithPessimisticLock(waitingId)
-                .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
+            // 가게 주인 확인 로직
+            if (!waiting.getStore().getUser().getId().equals(userId)) {
+                throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
+            }
 
-        // 가게 주인 확인 로직
-        if (!waiting.getStore().getUser().getId().equals(userId)) {
-            throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
+            updateWaiting(updateWaitingRequest.getStatus(), waiting);
+
+            return UpdateWaitingResponse.from(waiting);
+
+        } catch (Exception e) {
+            log.error("updateWaitingStatus 중 예외 발생: {}", e.getMessage());
+            handleLockingExceptions(e);
+            throw e;
         }
-
-        updateWaiting(updateWaitingRequest.getStatus(), waiting);
-
-        return UpdateWaitingResponse.from(waiting);
     }
 
     @Override
@@ -341,6 +356,19 @@ public class WaitingServiceImpl implements WaitingService {
 
     private LocalDateTime getCurrentTime() {
         return LocalDateTime.now();
+    }
+
+    private void handleLockingExceptions(Exception e) {
+        if (e instanceof LockTimeoutException) {
+            log.warn("LockTimeoutException 발생: {}", e.getMessage());
+            throw new CustomException(ExceptionType.LOCK_TIMEOUT);
+        } else if (e instanceof PessimisticLockException) {
+            log.error("PessimisticLockException 발생: {}", e.getMessage());
+            throw new CustomException(ExceptionType.LOCK_FAILED);
+        } else if (e instanceof DataAccessException) {
+            log.error("DataAccessException 발생: {}", e.getMessage());
+            throw new CustomException(ExceptionType.DATABASE_ERROR);
+        }
     }
 
 }
