@@ -1,6 +1,5 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
-import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
 import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
@@ -18,23 +17,6 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class DashboardProcessorConfig {
     private final DashboardBatchSupport batchSupport;
-
-    @Bean
-    public ItemProcessor<DashboardStatsAccumulator, Dashboard> dashboardStatsAccumulatorProcessor() {
-        return new ItemProcessor<DashboardStatsAccumulator, Dashboard>() {
-            @Override
-            public Dashboard process(@NonNull DashboardStatsAccumulator accumulator) throws Exception {
-                return Dashboard.builder()
-                        .totalUserCount(accumulator.getTotalUserCount())
-                        .dailyUserCount(accumulator.getDailyUserCount())
-                        .totalStoreCount(accumulator.getTotalStoreCount())
-                        .dailyNewStoreCount(accumulator.getDailyNewStoreCount())
-                        .dailyTotalSales(accumulator.getTotalDailySales())
-                        .statisticsDate(batchSupport.getYesterday())
-                        .build();
-            }
-        };
-    }
 
     @Bean
     @StepScope
