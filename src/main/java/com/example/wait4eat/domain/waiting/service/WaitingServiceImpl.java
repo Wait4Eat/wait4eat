@@ -210,6 +210,7 @@ public class WaitingServiceImpl implements WaitingService {
         return updated;
     }
 
+    // 키 생성: 하루 동안은 같은 키 사용 (예시) waiting:store:1:20250425
     private String generateWaitingStoreKey(Long storeId) {
         LocalDate today = LocalDate.now();
         return WAITING_STORE_KEY_PREFIX + storeId + ":" + today.format(DateTimeFormatter.ofPattern(WAITING_DATE_FORMAT));
@@ -232,13 +233,21 @@ public class WaitingServiceImpl implements WaitingService {
         waitingRepository.save(waiting);  // 현재 상태를 먼저 저장
 
         String key = generateWaitingStoreKey(storeId);
+
+        // 키가 존재하는지 확인
+        Boolean keyExists = waitingIdRedisTemplate.hasKey(key);
+
         // Redis에 activatedAt을 밀리초로 변환한 값을 score로 넣어 저장
         waitingIdRedisTemplate.opsForZSet().add(
                 key,
                 waiting.getId(),
                 waiting.getActivatedAt().toInstant(ZoneOffset.UTC).toEpochMilli()
         );
-        setExpiration(key);
+
+        // 키가 존재하지 않는 경우에만 만료시간 설정
+        if (Boolean.FALSE.equals(keyExists)) {
+            setExpiration(key);
+        }
 
         int currentSize = getCurrentWaitingTeamCount(storeId);
         log.info("가게 {} 웨이팅 팀 추가됨 (Redis Key: {}): {} (현재 대기열 크기: {})", storeId, key, waiting.getId(), currentSize);
