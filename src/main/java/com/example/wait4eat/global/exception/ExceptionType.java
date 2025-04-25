@@ -58,9 +58,11 @@ public enum ExceptionType {
     UNAUTHORIZED_CANCEL_WAITING(HttpStatus.FORBIDDEN, "웨이팅 취소 권한이 없습니다."),
     ALREADY_FINISHED_WAITING(HttpStatus.BAD_REQUEST, "이미 완료 또는 취소된 웨이팅입니다."),
     SINGLE_WAIT_ALLOWED(HttpStatus.BAD_REQUEST, "한 번에 하나의 웨이팅만 허용됩니다."),
-    NO_PERMISSION_TO_ACCESS_STORE_WAITING(HttpStatus.FORBIDDEN, "해당 가게 웨이팅 조회 권한이 없습니다"),
-    NOT_FIRST_IN_WAITING_QUEUE(HttpStatus.BAD_REQUEST, "현재 대기열에서 첫 번째 웨이팅이 아닙니다"),
-    INVALID_SORT_PARAMETER(HttpStatus.BAD_REQUEST, "올바르지 않은 정렬값입니다"),
+    NO_PERMISSION_TO_ACCESS_STORE_WAITING(HttpStatus.FORBIDDEN, "해당 가게 웨이팅 조회 권한이 없습니다."),
+    NOT_FIRST_IN_WAITING_QUEUE(HttpStatus.BAD_REQUEST, "현재 대기열에서 첫 번째 웨이팅이 아닙니다."),
+    INVALID_SORT_PARAMETER(HttpStatus.BAD_REQUEST, "올바르지 않은 정렬값입니다."),
+    LOCK_TIMEOUT(HttpStatus.CONFLICT, "현재 다른 사용자가 웨이팅 정보를 처리 중입니다. 잠시 후 다시 시도해주세요."),
+    LOCK_FAILED(HttpStatus.CONFLICT, "데이터베이스 락 획득에 실패했습니다. 잠시 후 다시 시도해주세요."),
 
     // StoreWishlist
     STORE_WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 위시리스트를 찾을 수 없습니다."),
@@ -81,7 +83,8 @@ public enum ExceptionType {
 
     // Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 문제가 발생했습니다."),
-    DATABASE_LOCK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "일시적인 오류입니다. 재시도해 주세요.");
+    DATABASE_LOCK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "일시적인 오류입니다. 재시도해 주세요."),
+    DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "데이터베이스 오류가 발생했습니다. 관리자에게 문의해주세요.");
 
     private final HttpStatus httpStatus;
     private final String message;
