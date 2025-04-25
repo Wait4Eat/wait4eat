@@ -21,16 +21,12 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -41,14 +37,10 @@ public class WaitingServiceImpl implements WaitingService {
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
-
-    private final RedisTemplate<String, Long> waitingIdRedisTemplate;
-    private static final String WAITING_STORE_KEY_PREFIX = "waiting:store:";
-    private static final String WAITING_DATE_FORMAT = "yyyyMMdd";
-    private static final LocalTime EXPIRATION_TIME = LocalTime.of(3, 0, 0); // 새벽 3시
+    private final WaitingRedisService waitingRedisService;
 
 
-    // 웨이팅 상태 순서 정의
+    // 웨이팅 상태 순서 정의: 상태 업데이트 시 순서 검증에 사용
     private static final List<WaitingStatus> statusOrder = List.of(
             WaitingStatus.REQUESTED,
             WaitingStatus.WAITING,
@@ -66,22 +58,22 @@ public class WaitingServiceImpl implements WaitingService {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
 
-        // 현재 사용자의 활성 웨이팅 상태 확인
+        // 현재 사용자의 활성 웨이팅 상태 확인하여 중복 웨이팅 방지
         waitingRepository.findByUserIdAndStatusIn(userId, List.of(WaitingStatus.REQUESTED, WaitingStatus.WAITING, WaitingStatus.CALLED))
                 .ifPresent(waiting -> {
                     throw new CustomException(ExceptionType.SINGLE_WAIT_ALLOWED);
                 });
 
-        // 고유한 주문 ID 생성 (UUID 사용)
+        // 고유한 주문 ID 생성
         String orderId = UUID.randomUUID().toString();
 
-        // 새로운 웨이팅 생성
+        // 새로운 웨이팅 생성 및 저장
         Waiting waiting = Waiting.builder()
                 .store(store)
                 .user(user)
-                .orderId(orderId) // 주문 ID 저장 (UUID)
+                .orderId(orderId)
                 .peopleCount(request.getPeopleCount())
-                .myWaitingOrder(0) // 초기값 0 또는 다른 값으로 설정 (결제 후 업데이트)
+                .myWaitingOrder(0) // 초기값 설정 (결제 후 업데이트)
                 .status(WaitingStatus.REQUESTED)
                 .build();
 
@@ -96,7 +88,7 @@ public class WaitingServiceImpl implements WaitingService {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
 
-        // 해당 userId가 가게를 생성한 본인인지 확인
+        // 해당 userId가 가게를 생성한 본인인지 확인 (접근 권한 검사)
         if (!store.getUser().getId().equals(userId)) {
             throw new CustomException(ExceptionType.NO_PERMISSION_TO_ACCESS_STORE_WAITING);
         }
@@ -127,14 +119,17 @@ public class WaitingServiceImpl implements WaitingService {
             Waiting waiting = waitingRepository.findByIdWithPessimisticLock(waitingId)
                     .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
+            // 취소 권한 확인 (본인인지 확인)
             if (!waiting.getUser().getId().equals(userId)) {
                 throw new CustomException(ExceptionType.UNAUTHORIZED_CANCEL_WAITING);
             }
 
+            // 이미 취소 또는 완료된 웨이팅인지 확인
             if (waiting.getStatus() == WaitingStatus.CANCELLED || waiting.getStatus() == WaitingStatus.COMPLETED) {
                 throw new CustomException(ExceptionType.ALREADY_FINISHED_WAITING);
             }
 
+            // 웨이팅 상태를 CANCELLED로 업데이트
             updateWaiting(WaitingStatus.CANCELLED, waiting);
 
             return CancelWaitingResponse.from(waiting);
@@ -154,12 +149,12 @@ public class WaitingServiceImpl implements WaitingService {
             Waiting waiting = waitingRepository.findByIdWithPessimisticLock(waitingId)
                     .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
-
             // 가게 주인 확인 로직
             if (!waiting.getStore().getUser().getId().equals(userId)) {
                 throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
             }
 
+            // 웨이팅 상태 업데이트
             updateWaiting(updateWaitingRequest.getStatus(), waiting);
 
             return UpdateWaitingResponse.from(waiting);
@@ -172,7 +167,6 @@ public class WaitingServiceImpl implements WaitingService {
     }
 
     @Override
-    //@Transactional
     public boolean updateWaiting(WaitingStatus newStatus, Waiting waiting) {
         WaitingStatus currentStatus = waiting.getStatus();
 
@@ -181,37 +175,37 @@ public class WaitingServiceImpl implements WaitingService {
         // 상태 변경 가능 여부 확인 (역행 방지)
         boolean canAdvance = statusOrder.indexOf(newStatus) > statusOrder.indexOf(currentStatus);
 
-        // 웨이팅 접수 -> 웨이팅 목록 추가
+        // 접수 -> 대기 (사장 권한)
         if (newStatus == WaitingStatus.WAITING && currentStatus == WaitingStatus.REQUESTED && canAdvance) {
             handleWaiting(waiting);
             updated = true;
         }
 
-        // 사장님 웨이팅 팀 호출
+        // 대기 -> 호출 (사장 권한)
         else if (newStatus == WaitingStatus.CALLED && currentStatus == WaitingStatus.WAITING && canAdvance) {
             handleCalled(waiting);
             updated = true;
         }
 
-        // 사장님 웨이팅 개별 취소 (REQUESTED -> CANCELLED) & 유저가 본인 웨이팅 취소
+        // 접수 -> 취소 (사장, 유저 둘다 가능)
         else if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.REQUESTED && canAdvance) {
             handleRequestedToCancelled(waiting);
             updated = true;
         }
 
-        // 사장님 웨이팅 개별 취소 (WAITING -> CANCELLED) & 유저가 본인 웨이팅 취소
+        // 대기 -> 취소 (사장, 유저 둘다 가능)
         else if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.WAITING && canAdvance) {
             handleWaitingToCancelled(waiting);
             updated = true;
         }
 
-        // 사장님 웨이팅 개별 취소 (CALLED -> CANCELLED) & 유저가 본인 웨이팅 취소
+        // 호출 -> 취소 (사장, 유저 둘다 가능)
         else if (newStatus == WaitingStatus.CANCELLED && currentStatus == WaitingStatus.CALLED && canAdvance) {
             handleCalledToCancelled(waiting);
             updated = true;
         }
 
-        // 웨이팅 팀이 가게로 입장 완료
+        // 호출 -> 완료 (사장 권한)
         else if (newStatus == WaitingStatus.COMPLETED && currentStatus == WaitingStatus.CALLED && canAdvance) {
             handleCompleted(waiting);
             updated = true;
@@ -225,73 +219,42 @@ public class WaitingServiceImpl implements WaitingService {
         return updated;
     }
 
-    // 키 생성: 하루 동안은 같은 키 사용 (예시) waiting:store:1:20250425
-    private String generateWaitingStoreKey(Long storeId) {
-        LocalDate today = LocalDate.now();
-        return WAITING_STORE_KEY_PREFIX + storeId + ":" + today.format(DateTimeFormatter.ofPattern(WAITING_DATE_FORMAT));
-    }
-
-    private void setExpiration(String key) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expirationDateTime = LocalDate.now().atTime(EXPIRATION_TIME);
-        if (now.isAfter(expirationDateTime)) {
-            expirationDateTime = expirationDateTime.plusDays(1); // 이미 오늘 새벽 3시가 지났으면 다음 날 새벽 3시로 설정
-        }
-        long ttl = Duration.between(now, expirationDateTime).getSeconds();
-        waitingIdRedisTemplate.expire(key, ttl, TimeUnit.SECONDS);
-    }
-
-    // REQUESTED -> WAITING: 가게 웨이팅 팀 수 증가, 호출된 사용자의 웨이팅 순서 + 1, 레디스 제트셋에 추가
+    // REQUESTED -> WAITING: 가게 웨이팅 팀 수 + 1, 추가된 사용자 순서: 가게 웨이팅 팀 수 + 1, 제트셋에 추가
     private void handleWaiting(Waiting waiting) {
+        // 변경된 상태를 DB에 먼저 저장
         Long storeId = waiting.getStore().getId();
         waiting.waiting(getCurrentTime());
-        waitingRepository.save(waiting);  // 현재 상태를 먼저 저장
+        waitingRepository.save(waiting);
 
-        String key = generateWaitingStoreKey(storeId);
+        String key = waitingRedisService.generateKey(storeId);
+        waitingRedisService.addToWaitingZSet(key, waiting.getId(), waiting.getActivatedAt());
 
-        // 키가 존재하는지 확인
-        Boolean keyExists = waitingIdRedisTemplate.hasKey(key);
-
-        // Redis에 activatedAt을 밀리초로 변환한 값을 score로 넣어 저장
-        waitingIdRedisTemplate.opsForZSet().add(
-                key,
-                waiting.getId(),
-                waiting.getActivatedAt().toInstant(ZoneOffset.UTC).toEpochMilli()
-        );
-
-        // 키가 존재하지 않는 경우에만 만료시간 설정
-        if (Boolean.FALSE.equals(keyExists)) {
-            setExpiration(key);
-        }
-
-        int currentSize = getCurrentWaitingTeamCount(storeId);
-        log.info("가게 {} 웨이팅 팀 추가됨 (Redis Key: {}): {} (현재 대기열 크기: {})", storeId, key, waiting.getId(), currentSize);
+        int count = waitingRedisService.getWaitingCount(key);
+        log.info("가게 {} 웨이팅 팀 추가됨 (Redis Key: {}): {} (현재 대기열 크기: {})", storeId, key, waiting.getId(), count);
     }
 
-    // WAITING -> CALLED: 가게의 웨이팅 팀 수 감소, 호출된 사용자의 웨이팅 순서 0, 레디스 제트셋에서 제거
+    // WAITING -> CALLED: 가게의 웨이팅 팀 수 - 1, 호출된 사용자의 웨이팅 순서 0, 제트셋에서 제거
     private void handleCalled(Waiting waiting) {
-        validateCanBeCalled(waiting); // 호출 전 유효성 검증
-
+        // 호출 전 유효성 검증 (첫 번째 순서인지)
+        validateCanBeCalled(waiting);
         Long storeId = waiting.getStore().getId();
         Long waitingId = waiting.getId();
-        String key = generateWaitingStoreKey(storeId);
 
         // 상태 변경
         waiting.call(getCurrentTime());
         waiting.markAsCalled();
         waitingRepository.save(waiting);
 
-        int currentCount = getCurrentWaitingTeamCount(waiting.getStore().getId());
-        log.info("가게 {} 웨이팅 팀 호출됨. 현재 웨이팅 팀 수: {}", waiting.getStore().getId(), currentCount);
-
+        // 제트셋에서 제거
+        String key = waitingRedisService.generateKey(storeId);
         applicationEventPublisher.publishEvent(WaitingCalledEvent.from(waiting));
+        waitingRedisService.removeFromWaitingZSet(key, waitingId);
 
-        // Redis에서 제거
-        waitingIdRedisTemplate.opsForZSet().remove(key, waitingId);
-        log.info("가게 {} 웨이팅 팀 호출됨 (Redis Key: {}): {}", storeId, key, waitingId);
+        int count = waitingRedisService.getWaitingCount(key);
+        log.info("가게 {} 웨이팅 팀 호출됨 (Redis Key: {}): {} (현재 대기열 크기: {})", storeId, key, waitingId, count);
     }
 
-    // REQUESTED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지, 레디스에 영향 없음
+    // REQUESTED -> CANCELLED: 가게 웨이팅 팀 수 유지, 최소된 사용자의 웨이팅 순서 유지, 제트셋에 영향 없음
     private void handleRequestedToCancelled(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
         waiting.cancel(getCurrentTime());
@@ -299,22 +262,22 @@ public class WaitingServiceImpl implements WaitingService {
         log.info("가게 {} 결제 전 웨이팅 요청 취소됨: {}", storeId, waiting.getId());
     }
 
-    // WAITING -> CANCELLED: 가게 웨이팅 팀 수 감소, 최소된 사용자의 웨이팅 순서 유지, 레디스 제트셋에서 제거
+    // WAITING -> CANCELLED: 가게 웨이팅 팀 수 - 1, 최소된 사용자의 웨이팅 순서 유지, 제트셋에서 제거
     private void handleWaitingToCancelled(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
         Long waitingId = waiting.getId();
-        String key = generateWaitingStoreKey(storeId);
 
         // 상태 변경
         waiting.cancel(getCurrentTime());
         waitingRepository.save(waiting);
 
-        // Redis에서 제거
-        waitingIdRedisTemplate.opsForZSet().remove(key, waitingId);
+        // 제트셋에서 제거
+        String key = waitingRedisService.generateKey(storeId);
+        waitingRedisService.removeFromWaitingZSet(key, waitingId);
         log.info("가게 {} 대기 중인 웨이팅 취소됨 (Redis Key: {}): {}", storeId, key, waitingId);
     }
 
-    // CALLED -> CANCELLED: 가게 웨이팅 팀 수 그대로, 최소된 사용자의 웨이팅 순서 유지, 레디스에 영향 없음
+    // CALLED -> CANCELLED: 가게 웨이팅 팀 수 유지, 최소된 사용자의 웨이팅 순서 유지, 제트셋에 영향 없음
     private void handleCalledToCancelled(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
         waiting.cancel(getCurrentTime());
@@ -322,7 +285,7 @@ public class WaitingServiceImpl implements WaitingService {
         log.info("가게 {} 호출 상태인 웨이팅 취소됨: {}", storeId, waiting.getId());
     }
 
-    // CALLED -> COMPLETED: 가게 웨이팅 팀 수 그대로, 입장한 사용자의 웨이팅 순서 0, 레디스에 영향 없음
+    // CALLED -> COMPLETED: 가게 웨이팅 팀 수 유지, 입장한 사용자의 웨이팅 순서 0, 제트셋에 영향 없음
     private void handleCompleted(Waiting waiting) {
         Long storeId = waiting.getStore().getId();
         waiting.enter(getCurrentTime());
@@ -331,27 +294,19 @@ public class WaitingServiceImpl implements WaitingService {
         log.info("가게 {} 웨이팅 완료됨: {}", storeId, waiting.getId());
     }
 
-    // 호출 전 유효성 체크: handleCalled() 안에서 Redis의 가장 앞 순서인지 검증
+    // 호출 전 유효성 검증 (첫 번째 순서인지)
     private void validateCanBeCalled(Waiting waiting) {
-        Long storeId = waiting.getStore().getId();
-        Long waitingId = waiting.getId();
-        String key = generateWaitingStoreKey(storeId);
-
-        // Redis에서 가장 앞 순서의 대기 ID 확인
-        Set<Long> first = waitingIdRedisTemplate.opsForZSet()
-                .range(key, 0, 0);
-
-        if (first == null || first.isEmpty() || !first.iterator().next().equals(waitingId)) {
+        String key = waitingRedisService.generateKey(waiting.getStore().getId());
+        if (!waitingRedisService.isFirstWaiting(key, waiting.getId())) {
             throw new CustomException(ExceptionType.NOT_FIRST_IN_WAITING_QUEUE);
         }
     }
 
-    // 가게의 현재 '대기 중'인 웨이팅팀 수
+    // 가게의 대기 상태인 웨이팅 팀 수
     @Override
     public int getCurrentWaitingTeamCount(Long storeId) {
-        String key = generateWaitingStoreKey(storeId);
-        Long size = waitingIdRedisTemplate.opsForZSet().zCard(key);
-        return size != null ? size.intValue() : 0;
+        String key = waitingRedisService.generateKey(storeId);
+        return waitingRedisService.getWaitingCount(key);
     }
 
     private LocalDateTime getCurrentTime() {
