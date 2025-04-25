@@ -49,7 +49,6 @@ public class StoreDocument {
                 .openTime(store.getOpenTime().format(DateTimeFormatter.ofPattern("HH:mm")))
                 .closeTime(store.getCloseTime().format(DateTimeFormatter.ofPattern("HH:mm")))
                 .depositAmount(store.getDepositAmount())
-                .waitingTeamCount(store.getWaitingTeamCount())
                 .build();
     }
 }

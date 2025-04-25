@@ -53,7 +53,6 @@ public class GetStoreListResponse {
                 .openTime(LocalTime.parse(storeDocument.getOpenTime()))
                 .closeTime(LocalTime.parse(storeDocument.getCloseTime()))
                 .depositAmount(storeDocument.getDepositAmount())
-                .waitingTeamCount(storeDocument.getWaitingTeamCount())
                 .build();
     }
 }

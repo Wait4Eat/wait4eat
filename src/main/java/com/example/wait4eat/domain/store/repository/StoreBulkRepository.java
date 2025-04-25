@@ -35,7 +35,6 @@ public class StoreBulkRepository {
             ps.setTime(5, Time.valueOf(store.getCloseTime()));
             ps.setString(6, store.getDescription());
             ps.setInt(7, store.getDepositAmount());
-            ps.setInt(8, store.getWaitingTeamCount());
             ps.setTimestamp(9, Timestamp.valueOf(
                     store.getCreatedAt() != null ? store.getCreatedAt() : LocalDateTime.now()));
             ps.setTimestamp(10, Timestamp.valueOf(
