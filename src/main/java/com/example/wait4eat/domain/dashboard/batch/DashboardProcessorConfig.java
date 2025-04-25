@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
+import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
 import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
@@ -16,7 +17,7 @@ import java.math.BigDecimal;
 @Configuration
 @RequiredArgsConstructor
 public class DashboardProcessorConfig {
-    private final DashboardBatchSupport BatchSupport;
+    private final DashboardBatchSupport batchSupport;
 
     @Bean
     public ItemProcessor<DashboardStatsAccumulator, Dashboard> dashboardStatsAccumulatorProcessor() {
@@ -29,7 +30,7 @@ public class DashboardProcessorConfig {
                         .totalStoreCount(accumulator.getTotalStoreCount())
                         .dailyNewStoreCount(accumulator.getDailyNewStoreCount())
                         .dailyTotalSales(accumulator.getTotalDailySales())
-                        .statisticsDate(BatchSupport.getYesterday())
+                        .statisticsDate(batchSupport.getYesterday())
                         .build();
             }
         };
@@ -43,10 +44,10 @@ public class DashboardProcessorConfig {
 
             @Override
             public PopularStore process(@NonNull Store store) {
-                int waitingCount = BatchSupport.waitingRepository
-                        .countByStoreAndCreatedAtBetween(store, BatchSupport.getStartDate(), BatchSupport.getEndDate());
-                Dashboard dashboard = BatchSupport.dashboardRepository
-                        .findByStatisticsDateOrElseThrow(BatchSupport.getYesterday());
+                int waitingCount = batchSupport.waitingRepository
+                        .countByStoreAndCreatedAtBetween(store, batchSupport.getStartDate(), batchSupport.getEndDate());
+                Dashboard dashboard = batchSupport.dashboardRepository
+                        .findByStatisticsDateOrElseThrow(batchSupport.getYesterday());
 
                 return PopularStore.builder()
                         .storeId(store.getId())
@@ -65,10 +66,10 @@ public class DashboardProcessorConfig {
         return new ItemProcessor<>() {
             @Override
             public StoreSalesRank process(@NonNull Store store) {
-                BigDecimal totalSales = BatchSupport.paymentRepository
-                        .sumAmountByStoreAndCreatedAtBetween(store, BatchSupport.getStartDate(), BatchSupport.getEndDate());
-                Dashboard findDashboard = BatchSupport.dashboardRepository
-                        .findByStatisticsDateOrElseThrow(BatchSupport.getYesterday());
+                BigDecimal totalSales = batchSupport.paymentRepository
+                        .sumAmountByStoreAndCreatedAtBetween(store, batchSupport.getStartDate(), batchSupport.getEndDate());
+                Dashboard findDashboard = batchSupport.dashboardRepository
+                        .findByStatisticsDateOrElseThrow(batchSupport.getYesterday());
 
                 return StoreSalesRank.builder()
                         .storeId(store.getId())

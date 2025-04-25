@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
+import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
 import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
@@ -15,33 +16,33 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @RequiredArgsConstructor
 public class DashboardStepConfig {
-    private final DashboardBatchSupport BatchSupport;
+    private final DashboardBatchSupport batchSupport;
     protected final DashboardReaderConfig dashboardReaderConfig;
     protected final DashboardProcessorConfig dashboardProcessorConfig;
     protected final DashboardWriterConfig dashboardWriterConfig;
 
     @Bean
     public Step userStatsStep(DashboardStatsAccumulator dashboardStatsAccumulator) {
-        return new StepBuilder("userStatsStep", BatchSupport.jobRepository)
-                .<User, User>chunk(1000, BatchSupport.transactionManager)
-                .reader(dashboardReaderConfig.userStatsReader(BatchSupport.entityManagerFactory))
+        return new StepBuilder("userStatsStep", batchSupport.jobRepository)
+                .<User, User>chunk(1000, batchSupport.transactionManager)
+                .reader(dashboardReaderConfig.userStatsReader(batchSupport.entityManagerFactory))
                 .writer(dashboardWriterConfig.userStatsWriter(dashboardStatsAccumulator))
                 .build();
     }
 
     @Bean
     public Step storeStatsStep(DashboardStatsAccumulator dashboardStatsAccumulator) {
-        return new StepBuilder("storeStatsStep", BatchSupport.jobRepository)
-                .<Store, Store>chunk(1000, BatchSupport.transactionManager)
-                .reader(dashboardReaderConfig.storeStatsReader(BatchSupport.entityManagerFactory))
+        return new StepBuilder("storeStatsStep", batchSupport.jobRepository)
+                .<Store, Store>chunk(1000, batchSupport.transactionManager)
+                .reader(dashboardReaderConfig.storeStatsReader(batchSupport.entityManagerFactory))
                 .writer(dashboardWriterConfig.storeStatsWriter(dashboardStatsAccumulator))
                 .build();
     }
 
     @Bean
     public Step paymentStatsStep(DashboardStatsAccumulator dashboardStatsAccumulator) {
-        return new StepBuilder("paymentStatsStep", BatchSupport.jobRepository)
-                .<Payment, Payment>chunk(1000, BatchSupport.transactionManager)
+        return new StepBuilder("paymentStatsStep", batchSupport.jobRepository)
+                .<Payment, Payment>chunk(1000, batchSupport.transactionManager)
                 .reader(dashboardReaderConfig.paymentStatsReader())
                 .writer(dashboardWriterConfig.paymentStatsWriter(dashboardStatsAccumulator))
                 .build();
@@ -49,8 +50,8 @@ public class DashboardStepConfig {
 
     @Bean
     public Step saveDashboardStep(DashboardStatsAccumulator dashboardStatsAccumulator) {
-        return new StepBuilder("saveDashboardStep", BatchSupport.jobRepository)
-                .<DashboardStatsAccumulator, Dashboard>chunk(1, BatchSupport.transactionManager)
+        return new StepBuilder("saveDashboardStep", batchSupport.jobRepository)
+                .<DashboardStatsAccumulator, Dashboard>chunk(1, batchSupport.transactionManager)
                 .reader(dashboardReaderConfig.accumulatorReader(dashboardStatsAccumulator))
                 .processor(dashboardProcessorConfig.dashboardStatsAccumulatorProcessor())
                 .writer(dashboardWriterConfig.dashboardWriter())
@@ -59,8 +60,8 @@ public class DashboardStepConfig {
 
     @Bean
     public Step updatePopularStoreStep() {
-        return new StepBuilder("updatePopularStoreStep", BatchSupport.jobRepository)
-                .<Store, PopularStore>chunk(10, BatchSupport.transactionManager)
+        return new StepBuilder("updatePopularStoreStep", batchSupport.jobRepository)
+                .<Store, PopularStore>chunk(10, batchSupport.transactionManager)
                 .reader(dashboardReaderConfig.popularStoreReader())
                 .processor(dashboardProcessorConfig.popularStoreProcessor())
                 .writer(dashboardWriterConfig.popularStoreWriter())
@@ -69,8 +70,8 @@ public class DashboardStepConfig {
 
     @Bean
     public Step updateStoreSalesRankStep() {
-        return new StepBuilder("updateStoreSalesRankStep", BatchSupport.jobRepository)
-                .<Store, StoreSalesRank>chunk(1000, BatchSupport.transactionManager)
+        return new StepBuilder("updateStoreSalesRankStep", batchSupport.jobRepository)
+                .<Store, StoreSalesRank>chunk(1000, batchSupport.transactionManager)
                 .reader(dashboardReaderConfig.storeSalesRankReader())
                 .processor(dashboardProcessorConfig.storeSalesRankProcessor())
                 .writer(dashboardWriterConfig.storeSalesRankWriter())
