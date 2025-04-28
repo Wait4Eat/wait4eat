@@ -1,6 +1,7 @@
 package com.example.wait4eat.scheduler;
 
 import com.example.wait4eat.client.SlackNotificationService;
+import com.example.wait4eat.global.message.outbox.service.AggregateQueueMapper;
 import com.example.wait4eat.global.message.publisher.MessagePublisher;
 import com.example.wait4eat.global.message.outbox.entity.OutboxMessage;
 import com.example.wait4eat.global.message.outbox.repository.OutboxMessageRepository;
@@ -20,6 +21,7 @@ public class OutboxRetryScheduler { // TODO : 여러 인스턴스에서 동시�
     private final OutboxMessageRepository outboxMessageRepository;
     private final MessagePublisher messagePublisher;
     private final SlackNotificationService slackNotificationService;
+    private final AggregateQueueMapper aggregateQueueMapper;
 
     private static final int MAX_RETRY_COUNT = 3;
     private static final int BATCH_SIZE = 100;
@@ -39,7 +41,8 @@ public class OutboxRetryScheduler { // TODO : 여러 인스턴스에서 동시�
 
         for (OutboxMessage message : messages) {
             try {
-                messagePublisher.publish(message.getPayload());
+                String queueName = aggregateQueueMapper.getQueueName(message.getAggregateType());
+                messagePublisher.publish(queueName, message.getPayload());
                 log.info("재발송 성공: id={}, {}번째에 성공", message.getId(), message.getRetryCount()+1);
                 message.markAsSent();
             } catch (Exception e) {

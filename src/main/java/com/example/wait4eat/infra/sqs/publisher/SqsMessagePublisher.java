@@ -10,12 +10,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SqsMessagePublisher implements MessagePublisher {
 
-    @Value("${spring.cloud.aws.sqs.endpoint}")
-    private String endpoint;
     private final SqsTemplate sqsTemplate;
 
     @Override
-    public void publish(String payload) {
+    public void publish(String endpoint, String payload) {
         sqsTemplate.send(endpoint, payload);
     }
 }
