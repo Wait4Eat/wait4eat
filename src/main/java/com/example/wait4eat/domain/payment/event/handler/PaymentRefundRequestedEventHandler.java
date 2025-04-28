@@ -34,7 +34,7 @@ public class PaymentRefundRequestedEventHandler {
         Payment payment = paymentRepository.findByOrderIdAndStatus(event.getOrderId(), PaymentStatus.SUCCEEDED);
 
         EventMessagePublishRequest request = new EventMessagePublishRequest(
-                AggregateType.PAYMENT,
+                AggregateType.PAYMENT_REFUND,
                 MessageType.PAYMENT_REFUND_REQUESTED,
                 payment.getId(),
                 event.getReason()
