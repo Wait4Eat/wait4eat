@@ -23,42 +23,18 @@ public class OutboxService {
     private final OutboxJdbcRepository outboxJdbcRepository;
 
     @Transactional
-    public List<OutboxMessage> createNotificationOutboxes(List<NotificationPayload> notificationPayloads) {
+    public List<OutboxMessage> createOutboxes(List<? extends MessagePayload> payloads) {
         List<OutboxMessage> messages = new ArrayList<>();
 
-        for (NotificationPayload notificationPayload : notificationPayloads) {
+        for (MessagePayload payload : payloads) {
             try {
-                String payload = objectMapper.writeValueAsString(notificationPayload);
+                String stringPayload = objectMapper.writeValueAsString(payload);
                 messages.add(
                         OutboxMessage.builder()
-                                .id(notificationPayload.getMessageKey())
-                                .aggregateId(notificationPayload.getTargetUserId())
-                                .aggregateType("NOTIFICATION")
-                                .payload(payload)
-                                .build()
-                );
-            } catch (JsonProcessingException e) {
-                log.warn("[OUTBOX 직렬화 실패] notificationId={}, reason={}", notificationPayload.getTargetUserId(), e.getMessage());
-            }
-        }
-
-        outboxJdbcRepository.saveAll(messages);
-        return messages;
-    }
-
-    @Transactional
-    public List<OutboxMessage> createEventOutboxes(List<MessagePayload> messagePayloads) {
-        List<OutboxMessage> messages = new ArrayList<>();
-
-        for (MessagePayload messagePayload : messagePayloads) {
-            try {
-                String payload = objectMapper.writeValueAsString(messagePayload);
-                messages.add(
-                        OutboxMessage.builder()
-                                .id(messagePayload.getMessageKey())
-                                .aggregateId(null)
-                                .aggregateType("EVENT")
-                                .payload(payload)
+                                .id(payload.getMessageKey())
+                                .aggregateId(payload.getAggregateId())
+                                .aggregateType(payload.getAggregateType())
+                                .payload(stringPayload)
                                 .build()
                 );
             } catch (JsonProcessingException e) {
