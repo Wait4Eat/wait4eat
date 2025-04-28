@@ -31,10 +31,14 @@ public class Payment {
     @ManyToOne(fetch = FetchType.LAZY)
     private Waiting waiting;
 
-    @JoinColumn(name = "coupon_id", nullable = false)
+    @JoinColumn(name = "coupon_id")
     @ManyToOne(fetch = FetchType.LAZY)
     private Coupon coupon;
 
+    @Column(nullable = false)
+    private String orderId;
+
+    @Column(nullable = false)
     private String paymentKey;
 
     @Column(nullable = false)
@@ -61,6 +65,7 @@ public class Payment {
             User user,
             Waiting waiting,
             Coupon coupon,
+            String orderId,
             String paymentKey,
             BigDecimal originalAmount,
             BigDecimal amount,
@@ -73,6 +78,7 @@ public class Payment {
         this.user = user;
         this.waiting = waiting;
         this.coupon = coupon;
+        this.orderId = orderId;
         this.paymentKey = paymentKey;
         this.originalAmount = originalAmount;
         this.amount = amount;
@@ -82,8 +88,14 @@ public class Payment {
         this.failedAt = failedAt;
         this.cancelledAt = cancelledAt;
     }
+
+    public void markAsFailed() {
+        this.status = PaymentStatus.FAILED;
+        this.failedAt = LocalDateTime.now();
+    }
+
     public void markAsRefunded() {
-        this.status = PaymentStatus.REFUNDED;
+        this.status = PaymentStatus.REFUND_COMPLETED;
         this.refundedAt = LocalDateTime.now();
     }
 }
