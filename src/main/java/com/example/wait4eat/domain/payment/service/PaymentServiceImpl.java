@@ -59,6 +59,9 @@ public class PaymentServiceImpl implements PaymentService {
         User user = userRepository.findByEmail(authUser.getEmail())
                 .orElseThrow(() -> new CustomException(ExceptionType.USER_NOT_FOUND));
 
+        log.info("[preparePayment] userId={}, email={}", user.getId(), user.getEmail());
+
+
         // TODO : 유효한 웨이팅인지 확인 필요
         Waiting waiting = waitingRepository.findById(request.getWaitingId())
                 .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
@@ -88,6 +91,8 @@ public class PaymentServiceImpl implements PaymentService {
                         .build()
         );
 
+        log.info("[preparePayment] PrePayment saved: prePaymentId={}, orderId={}", prePayment.getId(), prePayment.getOrderId());
+
         return PreparePaymentResponse.from(prePayment);
     }
 
@@ -98,21 +103,21 @@ public class PaymentServiceImpl implements PaymentService {
         String paymentKey = request.getPaymentKey();
         BigDecimal amount = request.getAmount();
 
-        log.info("[confirm payment] orderId={}, paymentKey={}, amount={}", orderId, paymentKey, amount);
+        log.info("[confirmPayment] start confirmation: orderId={}, paymentKey={}, amount={}", orderId, paymentKey, amount);
 
         PrePayment prePayment = prePaymentRepository.findByOrderIdAndStatus(orderId, PrePaymentStatus.REQUESTED)
                 .orElseThrow(() -> new CustomException(ExceptionType.PREPAYMENT_DOES_NOT_EXIST));
 
         // 가주문 데이터와 일치하는지 확인
         if (amount == null || prePayment.getAmount() == null || prePayment.getAmount().compareTo(amount) != 0) {
-            log.warn("[payment amount mismatch] orderId={}, expectedAmount={}, actualAmount={}",
+            log.warn("[confirmPayment] payment amount mismatch: orderId={}, expected={}, actual={}",
                     orderId, prePayment.getAmount(), amount);
             throw new CustomException(ExceptionType.PREPAYMENT_AMOUNT_MISMATCH);
         }
 
         try {
             TossConfirmPaymentResponse successResponse = tossPaymentClient.confirmPayment(paymentKey, orderId, amount);
-            log.info("[toss payment confirmed] paymentKey={}, orderId={}, totalAmount={}",
+            log.info("[confirmPayment] toss confirmation successful: paymentKey={}, orderId={}, totalAmount={}",
                     successResponse.getPaymentKey(), successResponse.getOrderId(), successResponse.getTotalAmount());
 
             Payment payment = paymentRepository.save(
@@ -130,12 +135,14 @@ public class PaymentServiceImpl implements PaymentService {
             );
 
             prePayment.markAsCompleted();
+            log.info("[confirmPayment] Payment saved: paymentId={}, status=SUCCEEDED", payment.getId());
 
             eventPublisher.publishEvent(PaymentConfirmedEvent.of(payment, payment.getWaiting()));
 
             return SuccessPaymentResponse.from(payment);
         } catch (TossPaymentConfirmFailedException e) {
-            log.warn("[payment confirm failed] orderId={}, paymentKey={}, reason={}", orderId, paymentKey, e.getMessage());
+            log.warn("[confirmPayment] toss confirmation failed: orderId={}, paymentKey={}, reason={}",
+                    orderId, paymentKey, e.getMessage());
 
             paymentRepository.save(
                     Payment.builder()
@@ -163,6 +170,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new CustomException(ExceptionType.PAYMENT_NOT_FOUND));
 
         if (payment.getStatus() != PaymentStatus.SUCCEEDED) {
+            log.warn("[refundPayment] invalid payment status for refund: paymentId={}, status={} ",
+                    paymentId, payment.getStatus());
             throw new IllegalArgumentException("환불 가능한 상태가 아닙니다.");
         }
 
@@ -170,12 +179,15 @@ public class PaymentServiceImpl implements PaymentService {
             TossCancelPaymentResponse response = tossPaymentClient.cancelPayment(payment.getPaymentKey(), refundReason);
 
             payment.markAsRefunded(response.getCancels().get(0).getCanceledAt().toLocalDateTime());
+            log.info("[refundPayment] Payment refunded successfully: paymentId={}, canceledAt={}",
+                    payment.getId(), payment.getRefundedAt());
 
             eventPublisher.publishEvent(PaymentRefundedEvent.from(payment));
         } catch (TossPaymentCancelFailedException e) {
-            log.warn("[payment cancel failed] paymentId={}, paymentKey={}, reason={}",
+            log.warn("[refundPayment] toss cancel failed: paymentId={}, paymentKey={}, reason={}",
                     paymentId, payment.getPaymentKey(), e.getMessage());
 
+            // TODO : 환불 실패 관련 처리 로직 필요
             throw new CustomException(ExceptionType.PAYMENT_CONFIRM_FAILED, e.getMessage());
         }
     }
