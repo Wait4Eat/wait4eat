@@ -2,7 +2,8 @@ package com.example.wait4eat.global.message.enums;
 
 public enum MessageType {
     WAITING_CALLED(true),
-    COUPON_EVENT_LAUNCHED(true);
+    COUPON_EVENT_LAUNCHED(true),
+    PAYMENT_REFUND_REQUESTED(false);
 
     private final boolean requiresNotification;
 

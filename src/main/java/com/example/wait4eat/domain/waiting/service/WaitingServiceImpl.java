@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.waiting.service;
 
+import com.example.wait4eat.domain.payment.event.PaymentRefundRequestedEvent;
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.store.repository.StoreRepository;
 import com.example.wait4eat.domain.user.entity.User;
@@ -275,6 +276,8 @@ public class WaitingServiceImpl implements WaitingService {
         String key = waitingRedisService.generateKey(storeId);
         waitingRedisService.removeFromWaitingZSet(key, waitingId);
         log.info("가게 {} 대기 중인 웨이팅 취소됨 (Redis Key: {}): {}", storeId, key, waitingId);
+
+        applicationEventPublisher.publishEvent(PaymentRefundRequestedEvent.of(waiting, "대기 중 웨이팅 취소"));
     }
 
     // CALLED -> CANCELLED: 가게 웨이팅 팀 수 유지, 최소된 사용자의 웨이팅 순서 유지, 제트셋에 영향 없음
@@ -283,6 +286,8 @@ public class WaitingServiceImpl implements WaitingService {
         waiting.cancel(getCurrentTime());
         waitingRepository.save(waiting);
         log.info("가게 {} 호출 상태인 웨이팅 취소됨: {}", storeId, waiting.getId());
+
+        applicationEventPublisher.publishEvent(PaymentRefundRequestedEvent.of(waiting, "호출 중 웨이팅 취소"));
     }
 
     // CALLED -> COMPLETED: 가게 웨이팅 팀 수 유지, 입장한 사용자의 웨이팅 순서 0, 제트셋에 영향 없음
