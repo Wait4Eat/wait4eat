@@ -5,7 +5,6 @@ import com.example.wait4eat.domain.dashboard.repository.DashboardRepository;
 import com.example.wait4eat.domain.dashboard.repository.PopularStoreRepository;
 import com.example.wait4eat.domain.dashboard.repository.StoreSalesRankRepository;
 import com.example.wait4eat.domain.payment.repository.PaymentRepository;
-import com.example.wait4eat.domain.store.repository.StoreRepository;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +24,6 @@ public class DashboardBatchSupport {
     protected final JobRepository jobRepository;
     protected final PlatformTransactionManager transactionManager;
     protected final EntityManagerFactory entityManagerFactory;
-    protected final StoreRepository storeRepository;
     protected final PaymentRepository paymentRepository;
     protected final WaitingRepository waitingRepository;
     protected final DashboardRepository dashboardRepository;

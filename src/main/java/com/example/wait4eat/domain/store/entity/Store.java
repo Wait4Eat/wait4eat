@@ -71,4 +71,8 @@ public class Store {
         this.depositAmount = depositAmount;
     }
 
+    // 테스트용
+    public void forceSetCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 }

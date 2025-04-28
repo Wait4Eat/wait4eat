@@ -3,7 +3,6 @@ package com.example.wait4eat.domain.dashboard.batch;
 import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
 import com.example.wait4eat.domain.dashboard.dto.StoreWaitingStats;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
-import com.example.wait4eat.domain.dashboard.entity.PopularStore;
 import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
 import com.example.wait4eat.domain.payment.entity.Payment;
 import com.example.wait4eat.domain.store.entity.Store;
