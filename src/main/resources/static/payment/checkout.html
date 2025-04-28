@@ -39,6 +39,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const orderIdFromQuery = urlParams.get('orderId');
     const amountFromQuery = urlParams.get('amount');
+    const shopNameFromQuery = urlParams.get('shopName');
 
     const amount = {
         currency: "KRW",
@@ -73,7 +74,7 @@
                     method: "CARD",
                     amount,
                     orderId: orderIdFromQuery, // 쿼리스트링에서 받아온 orderId 사용
-                    orderName: "예약금 결제",
+                    orderName: shopNameFromQuery + " 예약금 결제",
                     successUrl: window.location.origin + "/payment/success.html",
                     failUrl: window.location.origin + "/payment/fail.html",
                     customerEmail: "customer123@gmail.com",
