@@ -98,4 +98,9 @@ public class Payment {
         this.status = PaymentStatus.REFUND_COMPLETED;
         this.refundedAt = refundedAt;
     }
+
+    public void markAsRefundFailed() {
+        this.status = PaymentStatus.REFUND_FAILED;
+        this.failedAt = LocalDateTime.now();
+    }
 }

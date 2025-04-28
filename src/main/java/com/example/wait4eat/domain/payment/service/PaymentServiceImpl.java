@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.payment.service;
 
+import com.example.wait4eat.client.SlackNotificationService;
 import com.example.wait4eat.domain.coupon.entity.Coupon;
 import com.example.wait4eat.domain.payment.client.dto.TossCancelPaymentResponse;
 import com.example.wait4eat.domain.payment.client.dto.TossConfirmPaymentResponse;
@@ -50,6 +51,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final UserRepository userRepository;
     private final TossPaymentClient tossPaymentClient;
     private final ApplicationEventPublisher eventPublisher;
+    private final SlackNotificationService slackNotificationService;
 
 
     @Override
@@ -117,7 +119,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         try {
             TossConfirmPaymentResponse successResponse = tossPaymentClient.confirmPayment(paymentKey, orderId, amount);
-            log.info("[confirmPayment] toss confirmation successful: paymentKey={}, orderId={}, totalAmount={}",
+            log.info("[confirmPayment] toss confirmation successfully: paymentKey={}, orderId={}, totalAmount={}",
                     successResponse.getPaymentKey(), successResponse.getOrderId(), successResponse.getTotalAmount());
 
             Payment payment = paymentRepository.save(
@@ -187,7 +189,15 @@ public class PaymentServiceImpl implements PaymentService {
             log.warn("[refundPayment] toss cancel failed: paymentId={}, paymentKey={}, reason={}",
                     paymentId, payment.getPaymentKey(), e.getMessage());
 
-            // TODO : 환불 실패 관련 처리 로직 필요
+            payment.markAsRefundFailed();
+            slackNotificationService.sendNotificationToSlack(
+                    String.format(
+                            "[환불 실패] paymentId=%d, paymentKey=%s, 이유=%s",
+                            payment.getId(),
+                            payment.getPaymentKey(),
+                            e.getMessage()
+                    )
+            );
             throw new CustomException(ExceptionType.PAYMENT_CONFIRM_FAILED, e.getMessage());
         }
     }
