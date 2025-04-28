@@ -23,6 +23,7 @@ public class OutboxProcessor {
 
     private final MessagePublisher publisher;
     private final OutboxMessageRepository outboxMessageRepository;
+    private final AggregateQueueMapper aggregateQueueMapper;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void process(List<OutboxMessage> messages) {
@@ -33,7 +34,11 @@ public class OutboxProcessor {
         for (OutboxMessage message : messages) {
             try {
                 String payload = message.getPayload();
-                publisher.publish(payload);
+                String aggregateType = message.getAggregateType();
+
+                String queueName = aggregateQueueMapper.getQueueName(aggregateType);
+                publisher.publish(queueName, payload);
+
                 successIds.add(message.getId());
             } catch (Exception e) {
                 failedIds.add(message.getId());
