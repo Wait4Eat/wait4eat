@@ -1,12 +1,15 @@
 package com.example.wait4eat.domain.payment.service;
 
 import com.example.wait4eat.domain.coupon.entity.Coupon;
+import com.example.wait4eat.domain.payment.client.dto.TossCancelPaymentResponse;
 import com.example.wait4eat.domain.payment.client.dto.TossConfirmPaymentResponse;
+import com.example.wait4eat.domain.payment.client.exception.TossPaymentCancelFailedException;
 import com.example.wait4eat.domain.payment.client.exception.TossPaymentConfirmFailedException;
 import com.example.wait4eat.domain.payment.dto.request.ConfirmPaymentRequest;
 import com.example.wait4eat.domain.payment.entity.PrePayment;
 import com.example.wait4eat.domain.payment.enums.PrePaymentStatus;
 import com.example.wait4eat.domain.payment.event.PaymentConfirmedEvent;
+import com.example.wait4eat.domain.payment.event.PaymentRefundedEvent;
 import com.example.wait4eat.domain.payment.repository.PrePaymentRepository;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.user.repository.UserRepository;
@@ -155,27 +158,25 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public RefundPaymentResponse refundPayment(Long paymentId, RefundPaymentRequest request) {
+    public void refundPayment(Long paymentId, String refundReason) {
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 결제입니다."));
+                .orElseThrow(() -> new CustomException(ExceptionType.PAYMENT_NOT_FOUND));
+
         if (payment.getStatus() != PaymentStatus.SUCCEEDED) {
             throw new IllegalArgumentException("환불 가능한 상태가 아닙니다.");
         }
-        payment.markAsRefunded();
-        paymentRepository.save(payment);
 
-        return RefundPaymentResponse.builder()
-                .message("환불이 완료되었습니다.")
-                .refundedAt(LocalDateTime.now().toString())
-                .build();
-    }
+        try {
+            TossCancelPaymentResponse response = tossPaymentClient.cancelPayment(payment.getPaymentKey(), refundReason);
 
-    private void saveOrSkipIfAlreadyExist(Payment payment) {
-        boolean exists = paymentRepository.existsByPaymentKey(payment.getPaymentKey());
-        if (!exists) {
-            paymentRepository.save(payment);
-        } else {
-            log.warn("이미 처리된 결제입니다. paymentKey={}", payment.getPaymentKey());
+            payment.markAsRefunded(response.getCancels().get(0).getCanceledAt().toLocalDateTime());
+
+            eventPublisher.publishEvent(PaymentRefundedEvent.from(payment));
+        } catch (TossPaymentCancelFailedException e) {
+            log.warn("[payment cancel failed] paymentId={}, paymentKey={}, reason={}",
+                    paymentId, payment.getPaymentKey(), e.getMessage());
+
+            throw new CustomException(ExceptionType.PAYMENT_CONFIRM_FAILED, e.getMessage());
         }
     }
 }

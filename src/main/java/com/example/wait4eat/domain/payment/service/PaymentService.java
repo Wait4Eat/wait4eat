@@ -11,5 +11,5 @@ import java.math.BigDecimal;
 public interface PaymentService {
     PreparePaymentResponse preparePayment(PreparePaymentRequest request);
     SuccessPaymentResponse confirmPayment(ConfirmPaymentRequest request);
-    RefundPaymentResponse refundPayment(Long paymentId, RefundPaymentRequest request);
+    void refundPayment(Long paymentId, String refundReason);
 }

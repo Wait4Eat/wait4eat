@@ -38,28 +38,4 @@ public class PaymentController {
         SuccessPaymentResponse response = paymentService.confirmPayment(request);
         return ResponseEntity.ok(SuccessResponse.of(response, "웨이팅이 확정되었습니다."));
     }
-
-    @GetMapping("/api/v1/payments/fail")
-    public ResponseEntity<ErrorResponse> handlePaymentFail(
-            @RequestParam(required = false) String message
-    ) {
-        String errorMessage = (message != null && !message.isBlank())
-                ? message
-                : ExceptionType.INTERNAL_SERVER_ERROR.getMessage();
-
-        CustomException customException = new CustomException(ExceptionType.INTERNAL_SERVER_ERROR, errorMessage);
-
-        return ResponseEntity
-                .status(customException.getHttpStatus())
-                .body(ErrorResponse.from(customException));
-    }
-
-    @PostMapping("/api/v1/payments/{paymentId}/refund")
-    public ResponseEntity<SuccessResponse<RefundPaymentResponse>> refundPayment(
-            @PathVariable Long paymentId,
-            @RequestBody RefundPaymentRequest request
-    ) {
-        RefundPaymentResponse response = paymentService.refundPayment(paymentId, request);
-        return ResponseEntity.ok(SuccessResponse.from(response));
-    }
 }

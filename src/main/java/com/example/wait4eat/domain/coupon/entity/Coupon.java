@@ -69,4 +69,8 @@ public class Coupon {
     public void markAsUsed() {
         isUsed = true;
     }
+
+    public void markAsNotUsed() {
+        isUsed = false;
+    }
 }
