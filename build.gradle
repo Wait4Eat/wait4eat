@@ -67,6 +67,9 @@ dependencies {
 
     // H2
     testImplementation 'com.h2database:h2'
+
+    // Retry
+    implementation 'org.springframework.retry:spring-retry'
 }
 
 tasks.named('test') {
