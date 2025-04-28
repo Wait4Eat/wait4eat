@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="https://static.toss.im/icons/png/4x/icon-toss-logo.png" />
+    <link rel="stylesheet" type="text/css" href="/payment/style.css" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>결제 요청</title>
+    <!-- SDK 추가 -->
+    <script src="https://js.tosspayments.com/v2/standard"></script>
+</head>
+
+<body>
+<!-- 주문서 영역 -->
+<div class="wrapper">
+    <div class="box_section" style="padding: 40px 30px 50px 30px; margin-top: 30px; margin-bottom: 50px">
+        <h1>일반 결제</h1>
+        <!-- 결제 UI -->
+        <div id="payment-method" style="display: flex">
+            <button id="CARD" class="button2" onclick="selectPaymentMethod('CARD')">카드</button>
+            <button id="TRANSFER" class="button2" onclick="selectPaymentMethod('TRANSFER')">계좌이체</button>
+            <button id="VIRTUAL_ACCOUNT" class="button2" onclick="selectPaymentMethod('VIRTUAL_ACCOUNT')">가상계좌</button>
+            <button id="MOBILE_PHONE" class="button2" onclick="selectPaymentMethod('MOBILE_PHONE')">휴대폰</button>
+            <button id="CULTURE_GIFT_CERTIFICATE" class="button2" onclick="selectPaymentMethod('CULTURE_GIFT_CERTIFICATE')">문화상품권</button>
+            <button id="FOREIGN_EASY_PAY" class="button2" onclick="selectPaymentMethod('FOREIGN_EASY_PAY')">해외간편결제</button>
+        </div>
+        <!-- 결제하기 버튼 -->
+        <button class="button" style="margin-top: 30px" onclick="requestPayment()">결제하기</button>
+    </div>
+    <div class="box_section" style="padding: 40px 30px 50px 30px; margin-top: 30px; margin-bottom: 50px">
+        <h1>정기 결제</h1>
+        <!-- 빌링 버튼 -->
+        <button class="button" style="margin-top: 30px" onclick="requestBillingAuth()">빌링키 발급하기</button>
+    </div>
+</div>
+<script>
+    // 쿼리스트링에서 orderId, amount 읽기
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderIdFromQuery = urlParams.get('orderId');
+    const amountFromQuery = urlParams.get('amount');
+
+    const amount = {
+        currency: "KRW",
+        value: Number(amountFromQuery)
+    };
+
+    let selectedPaymentMethod = null;
+
+    function selectPaymentMethod(method) {
+        if (selectedPaymentMethod != null) {
+            document.getElementById(selectedPaymentMethod).style.backgroundColor = "#ffffff";
+        }
+
+        selectedPaymentMethod = method;
+        document.getElementById(selectedPaymentMethod).style.backgroundColor = "rgb(229 239 255)";
+    }
+
+    const clientKey = "test_ck_LlDJaYngro5wmOeX6P2l3ezGdRpX";
+    const customerKey = generateRandomString();
+    const tossPayments = TossPayments(clientKey);
+    const payment = tossPayments.payment({ customerKey });
+
+    async function requestPayment() {
+        if (!orderIdFromQuery) {
+            alert('orderId가 없습니다. 결제를 진행할 수 없습니다.');
+            return;
+        }
+
+        switch (selectedPaymentMethod) {
+            case "CARD":
+                await payment.requestPayment({
+                    method: "CARD",
+                    amount,
+                    orderId: orderIdFromQuery, // 쿼리스트링에서 받아온 orderId 사용
+                    orderName: "예약금 결제",
+                    successUrl: window.location.origin + "/payment/success.html",
+                    failUrl: window.location.origin + "/payment/fail.html",
+                    customerEmail: "customer123@gmail.com",
+                    customerName: "김토스",
+                    card: {
+                        useEscrow: false,
+                        flowMode: "DEFAULT",
+                        useCardPoint: false,
+                        useAppCardOnly: false,
+                    },
+                });
+                break;
+            case "TRANSFER":
+                await payment.requestPayment({
+                    method: "TRANSFER",
+                    amount,
+                    orderId: orderIdFromQuery,
+                    orderName: "예약금 결제",
+                    successUrl: window.location.origin + "/payment/success.html",
+                    failUrl: window.location.origin + "/payment/fail.html",
+                    customerEmail: "customer123@gmail.com",
+                    customerName: "김토스",
+                    transfer: {
+                        cashReceipt: { type: "소득공제" },
+                        useEscrow: false,
+                    },
+                });
+                break;
+            // 이하 VIRTUAL_ACCOUNT, MOBILE_PHONE, CULTURE_GIFT_CERTIFICATE, FOREIGN_EASY_PAY도 똑같이 적용
+        }
+    }
+
+    async function requestBillingAuth() {
+        await payment.requestBillingAuth({
+            method: "CARD",
+            successUrl: window.location.origin + "/payment/billing.html",
+            failUrl: window.location.origin + "/payment/fail.html",
+            customerEmail: "customer123@gmail.com",
+            customerName: "김토스",
+        });
+    }
+
+    function generateRandomString() {
+        return window.btoa(Math.random()).slice(0, 20);
+    }
+</script>
+
+</body>
+</html>
