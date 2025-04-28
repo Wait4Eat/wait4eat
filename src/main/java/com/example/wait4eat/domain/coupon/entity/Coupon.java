@@ -65,4 +65,8 @@ public class Coupon {
         this.isUsed = false;
         this.usedAt = usedAt;
     }
+
+    public void markAsUsed() {
+        isUsed = true;
+    }
 }
