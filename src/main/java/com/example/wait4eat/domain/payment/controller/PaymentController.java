@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.payment.controller;
 
+import com.example.wait4eat.domain.payment.dto.request.ConfirmPaymentRequest;
 import com.example.wait4eat.domain.payment.dto.request.PreparePaymentRequest;
 import com.example.wait4eat.domain.payment.dto.request.RefundPaymentRequest;
 import com.example.wait4eat.domain.payment.dto.response.PreparePaymentResponse;
@@ -12,7 +13,6 @@ import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -31,14 +31,12 @@ public class PaymentController {
         return ResponseEntity.ok(SuccessResponse.from(response));
     }
 
-    @GetMapping("/api/v1/payments/success")
+    @PostMapping("/api/v1/payments/confirm")
     public ResponseEntity<SuccessResponse<SuccessPaymentResponse>> handlePaymentSuccess(
-            @RequestParam String paymentKey,
-            @RequestParam String orderId,
-            @RequestParam(name = "amount") BigDecimal amount
+            @RequestBody ConfirmPaymentRequest request
     ) {
-        SuccessPaymentResponse response = paymentService.handleSuccess(paymentKey, orderId, amount);
-        return ResponseEntity.ok(SuccessResponse.from(response));
+        SuccessPaymentResponse response = paymentService.confirmPayment(request);
+        return ResponseEntity.ok(SuccessResponse.of(response, "웨이팅이 확정되었습니다."));
     }
 
     @GetMapping("/api/v1/payments/fail")

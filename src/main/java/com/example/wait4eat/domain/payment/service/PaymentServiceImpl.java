@@ -1,7 +1,13 @@
 package com.example.wait4eat.domain.payment.service;
 
 import com.example.wait4eat.domain.coupon.entity.Coupon;
-import com.example.wait4eat.domain.payment.consts.PaymentEndpoint;
+import com.example.wait4eat.domain.payment.client.dto.TossConfirmPaymentResponse;
+import com.example.wait4eat.domain.payment.client.exception.TossPaymentConfirmFailedException;
+import com.example.wait4eat.domain.payment.dto.request.ConfirmPaymentRequest;
+import com.example.wait4eat.domain.payment.entity.PrePayment;
+import com.example.wait4eat.domain.payment.enums.PrePaymentStatus;
+import com.example.wait4eat.domain.payment.event.PaymentConfirmedEvent;
+import com.example.wait4eat.domain.payment.repository.PrePaymentRepository;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.domain.coupon.repository.CouponRepository;
@@ -21,6 +27,7 @@ import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,11 +40,14 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
-    private final TossPaymentClient tossPaymentClient;
     private final WaitingRepository waitingRepository;
     private final CouponRepository couponRepository;
     private final PaymentRepository paymentRepository;
+    private final PrePaymentRepository prePaymentRepository;
     private final UserRepository userRepository;
+    private final TossPaymentClient tossPaymentClient;
+    private final ApplicationEventPublisher eventPublisher;
+
 
     @Override
     @Transactional
@@ -46,6 +56,7 @@ public class PaymentServiceImpl implements PaymentService {
         User user = userRepository.findByEmail(authUser.getEmail())
                 .orElseThrow(() -> new CustomException(ExceptionType.USER_NOT_FOUND));
 
+        // TODO : 유효한 웨이팅인지 확인 필요
         Waiting waiting = waitingRepository.findById(request.getWaitingId())
                 .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
@@ -53,6 +64,7 @@ public class PaymentServiceImpl implements PaymentService {
             throw new CustomException(ExceptionType.NO_PERMISSION_ACTION, "웨이팅 당사자만 결제가 가능합니다.");
         }
 
+        // TODO : 유효한 쿠폰인지 확인 필요
         Coupon coupon = couponRepository.findById(request.getCouponId())
                 .orElseThrow(() -> new CustomException(ExceptionType.COUPON_NOT_FOUND));
 
@@ -60,53 +72,85 @@ public class PaymentServiceImpl implements PaymentService {
         int discountAmount = coupon.getDiscountAmount().intValue();
         int amount = Math.max(originalAmount - discountAmount, 0);
 
-        return PreparePaymentResponse.builder()
-                .orderId(waiting.getOrderId())
-                .originalAmount(BigDecimal.valueOf(originalAmount))
-                .amount(BigDecimal.valueOf(amount))
-                .customerKey("user-" + user.getId())
-                .shopName(waiting.getStore().getName())
-                .successPath(PaymentEndpoint.SUCCESS_PATH)
-                .failPath(PaymentEndpoint.FAIL_PATH)
-                .build();
+        // TODO : 같은 orderId를 가진 REQUESTED 상태의 PrePayment가 있는지 확인 필요
+        PrePayment prePayment = prePaymentRepository.save(
+                PrePayment.builder()
+                        .user(user)
+                        .waiting(waiting)
+                        .coupon(coupon)
+                        .orderId(waiting.getOrderId())
+                        .originalAmount(BigDecimal.valueOf(originalAmount))
+                        .amount(BigDecimal.valueOf(amount))
+                        .status(PrePaymentStatus.REQUESTED)
+                        .build()
+        );
+
+        return PreparePaymentResponse.from(prePayment);
     }
 
     @Override
     @Transactional
-    public SuccessPaymentResponse handleSuccess(String paymentKey, String orderId, BigDecimal amount) {
-        try {
-            tossPaymentClient.confirmPayment(paymentKey, orderId, amount);
-        } catch (Exception e) {
-            String message = e.getMessage();
+    public SuccessPaymentResponse confirmPayment(ConfirmPaymentRequest request) {
+        String orderId = request.getOrderId();
+        String paymentKey = request.getPaymentKey();
+        BigDecimal amount = request.getAmount();
 
-            if (message != null && message.contains("ALREADY_PROCESSED_PAYMENT")) {
-                log.warn("Toss confirm skipped: 이미 처리된 결제입니다.");
-            } else {
-                log.error("Toss confirm 실패: {}", message);
-                throw e;
-            }
+        log.info("[confirm payment] orderId={}, paymentKey={}, amount={}", orderId, paymentKey, amount);
+
+        PrePayment prePayment = prePaymentRepository.findByOrderIdAndStatus(orderId, PrePaymentStatus.REQUESTED)
+                .orElseThrow(() -> new CustomException(ExceptionType.PREPAYMENT_DOES_NOT_EXIST));
+
+        // 가주문 데이터와 일치하는지 확인
+        if (amount == null || prePayment.getAmount() == null || prePayment.getAmount().compareTo(amount) != 0) {
+            log.warn("[payment amount mismatch] orderId={}, expectedAmount={}, actualAmount={}",
+                    orderId, prePayment.getAmount(), amount);
+            throw new CustomException(ExceptionType.PREPAYMENT_AMOUNT_MISMATCH);
         }
 
-        Waiting waiting = waitingRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 웨이팅입니다."));
+        try {
+            TossConfirmPaymentResponse successResponse = tossPaymentClient.confirmPayment(paymentKey, orderId, amount);
+            log.info("[toss payment confirmed] paymentKey={}, orderId={}, totalAmount={}",
+                    successResponse.getPaymentKey(), successResponse.getOrderId(), successResponse.getTotalAmount());
 
-        Payment payment = Payment.builder()
-                .paymentKey(paymentKey)
-                .amount(amount)
-                .originalAmount(BigDecimal.valueOf(waiting.getStore().getDepositAmount()))
-                .user(waiting.getUser())
-                .status(PaymentStatus.PAID)
-                .paidAt(LocalDateTime.now())
-                .build();
+            Payment payment = paymentRepository.save(
+                    Payment.builder()
+                            .paymentKey(successResponse.getPaymentKey())
+                            .orderId(successResponse.getOrderId())
+                            .coupon(prePayment.getCoupon())
+                            .user(prePayment.getUser())
+                            .waiting(prePayment.getWaiting())
+                            .originalAmount(prePayment.getOriginalAmount())
+                            .amount(successResponse.getTotalAmount())
+                            .status(PaymentStatus.SUCCEEDED)
+                            .paidAt(successResponse.getApprovedAt().toLocalDateTime())
+                            .build()
+            );
 
-        paymentRepository.save(payment);
+            prePayment.markAsCompleted();
 
-        return SuccessPaymentResponse.builder()
-                .message("결제가 완료되었습니다.")
-                .waitingId(waiting.getId())
-                .paymentId(payment.getId())
-                .amount(amount)
-                .build();
+            eventPublisher.publishEvent(PaymentConfirmedEvent.of(payment, payment.getWaiting()));
+
+            return SuccessPaymentResponse.from(payment);
+        } catch (TossPaymentConfirmFailedException e) {
+            log.warn("[payment confirm failed] orderId={}, paymentKey={}, reason={}", orderId, paymentKey, e.getMessage());
+
+            paymentRepository.save(
+                    Payment.builder()
+                            .paymentKey(paymentKey)
+                            .orderId(orderId)
+                            .user(prePayment.getUser())
+                            .waiting(prePayment.getWaiting())
+                            .originalAmount(prePayment.getOriginalAmount())
+                            .amount(amount)
+                            .status(PaymentStatus.FAILED)
+                            .failedAt(LocalDateTime.now())
+                            .build()
+            );
+
+            prePayment.markAsFailed();
+
+            throw new CustomException(ExceptionType.PAYMENT_CONFIRM_FAILED, e.getMessage());
+        }
     }
 
     @Override
@@ -114,7 +158,7 @@ public class PaymentServiceImpl implements PaymentService {
     public RefundPaymentResponse refundPayment(Long paymentId, RefundPaymentRequest request) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 결제입니다."));
-        if (payment.getStatus() != PaymentStatus.PAID) {
+        if (payment.getStatus() != PaymentStatus.SUCCEEDED) {
             throw new IllegalArgumentException("환불 가능한 상태가 아닙니다.");
         }
         payment.markAsRefunded();
@@ -124,5 +168,14 @@ public class PaymentServiceImpl implements PaymentService {
                 .message("환불이 완료되었습니다.")
                 .refundedAt(LocalDateTime.now().toString())
                 .build();
+    }
+
+    private void saveOrSkipIfAlreadyExist(Payment payment) {
+        boolean exists = paymentRepository.existsByPaymentKey(payment.getPaymentKey());
+        if (!exists) {
+            paymentRepository.save(payment);
+        } else {
+            log.warn("이미 처리된 결제입니다. paymentKey={}", payment.getPaymentKey());
+        }
     }
 }
