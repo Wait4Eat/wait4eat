@@ -42,7 +42,7 @@ public class User {
     private LocalDateTime modifiedAt;
 
     @Setter
-    private LocalDate loginDate;
+    private LocalDate lastLoginDate;
 
     @Builder
     public User(String email, String nickname, String password, UserRole role) {
