@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>결제 준비</title>
+</head>
+<body>
+<h1>결제 준비하기</h1>
+
+<form id="paymentForm">
+    <label for="waitingId">Waiting ID:</label>
+    <input type="number" id="waitingId" name="waitingId" required><br><br>
+
+    <label for="couponId">Coupon ID:</label>
+    <input type="number" id="couponId" name="couponId"><br><br>
+
+    <button type="submit">결제 준비 요청</button>
+</form>
+
+<script>
+    const form = document.getElementById('paymentForm');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const waitingId = document.getElementById('waitingId').value;
+        const couponId = document.getElementById('couponId').value;
+
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ1c2VyMUBleGFtcGxlLmNvbSIsInVzZXJSb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzQ4MzI2OTcyLCJpYXQiOjE3NDU3MzQ5NzJ9.mJpJGSiM41cFmuoeNh7vdKzpXWsnBiBuxK5H51iRzCU';
+        try {
+            const response = await fetch('/api/v1/payments/prepare', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    waitingId: Number(waitingId),
+                    couponId: couponId ? Number(couponId) : null,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('결제 준비 요청 실패');
+            }
+
+            const result = await response.json();
+            const preparePayment = result.data;
+
+            console.log('결제 준비 완료:', preparePayment);
+
+            // checkout 페이지로 이동
+             window.location.href = `/payment/checkout.html?orderId=${preparePayment.orderId}&amount=${preparePayment.amount}&shopName=${preparePayment.showName}`;
+
+        } catch (error) {
+            console.error(error);
+            alert('결제 준비에 실패했습니다.');
+        }
+    });
+</script>
+</body>
+</html>
