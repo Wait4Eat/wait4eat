@@ -54,7 +54,7 @@ public class AuthService {
             throw new CustomException(ExceptionType.INCORRECT_PASSWORD);
         }
 
-        user.setLoginDate(today);
+        user.setLastLoginDate(today);
         userRepository.save(user);
         String bearerToken = jwtUtil.createAccessToken(user.getId(), user.getEmail(), user.getRole());
 
