@@ -27,6 +27,6 @@ public class DashboardStatsAccumulator {
     }
 
     public void addPayment(BigDecimal totalDailySales) {
-        this.totalDailySales = totalDailySales;
+        this.totalDailySales = this.totalDailySales.add(totalDailySales);
     }
 }
