@@ -22,6 +22,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,36 +53,46 @@ public class WaitingServiceImpl implements WaitingService {
     );
 
     @Override
+    @Retryable(retryFor = {LockTimeoutException.class, PessimisticLockException.class, DataAccessException.class},
+    maxAttempts = 2, backoff = @Backoff(delay = 5000, multiplier = 2))
     @Transactional
     public CreateWaitingResponse createWaiting(Long userId, Long storeId, CreateWaitingRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ExceptionType.USER_NOT_FOUND));
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new CustomException(ExceptionType.USER_NOT_FOUND));
 
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
+            Store store = storeRepository.findById(storeId)
+                    .orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
 
-        // 현재 사용자의 활성 웨이팅 상태 확인하여 중복 웨이팅 방지
-        waitingRepository.findByUserIdAndStatusIn(userId, List.of(WaitingStatus.REQUESTED, WaitingStatus.WAITING, WaitingStatus.CALLED))
-                .ifPresent(waiting -> {
-                    throw new CustomException(ExceptionType.SINGLE_WAIT_ALLOWED);
-                });
+            // 현재 사용자의 활성 웨이팅 상태 확인하여 중복 웨이팅 방지 (비관적 락 적용)
+            waitingRepository.findByUserIdAndStatusInWithPessimisticLock(userId, List.of(WaitingStatus.REQUESTED, WaitingStatus.WAITING, WaitingStatus.CALLED))
+                    .ifPresent(waiting -> {
+                        throw new CustomException(ExceptionType.SINGLE_WAIT_ALLOWED);
+                    });
 
-        // 고유한 주문 ID 생성
-        String orderId = UUID.randomUUID().toString();
 
-        // 새로운 웨이팅 생성 및 저장
-        Waiting waiting = Waiting.builder()
-                .store(store)
-                .user(user)
-                .orderId(orderId)
-                .peopleCount(request.getPeopleCount())
-                .myWaitingOrder(0) // 초기값 설정 (결제 후 업데이트)
-                .status(WaitingStatus.REQUESTED)
-                .build();
+            // 고유한 주문 ID 생성
+            String orderId = UUID.randomUUID().toString();
 
-        Waiting savedWaiting = waitingRepository.save(waiting);
+            // 새로운 웨이팅 생성 및 저장
+            Waiting waiting = Waiting.builder()
+                    .store(store)
+                    .user(user)
+                    .orderId(orderId)
+                    .peopleCount(request.getPeopleCount())
+                    .myWaitingOrder(0) // 초기값 설정 (결제 후 업데이트)
+                    .status(WaitingStatus.REQUESTED)
+                    .build();
 
-        return CreateWaitingResponse.from(savedWaiting);
+            Waiting savedWaiting = waitingRepository.save(waiting);
+
+            return CreateWaitingResponse.from(savedWaiting);
+
+        } catch (Exception e) {
+            log.error("createWaiting 중 예외 발생: {}", e.getMessage());
+            handleLockingExceptions(e);
+            throw e;
+        }
     }
 
     @Override
