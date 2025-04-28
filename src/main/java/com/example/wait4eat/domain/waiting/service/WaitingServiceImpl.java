@@ -53,23 +53,30 @@ public class WaitingServiceImpl implements WaitingService {
     );
 
     @Override
-    @Retryable(retryFor = {LockTimeoutException.class, PessimisticLockException.class, DataAccessException.class},
-    maxAttempts = 2, backoff = @Backoff(delay = 5000, multiplier = 2))
+    @Retryable(
+            retryFor = {LockTimeoutException.class, PessimisticLockException.class, DataAccessException.class},
+            maxAttempts = 2,
+            backoff = @Backoff(delay = 5000, multiplier = 2)
+    )
     @Transactional
     public CreateWaitingResponse createWaiting(Long userId, Long storeId, CreateWaitingRequest request) {
         try {
-            User user = userRepository.findById(userId)
+            // 유저에 비관적 락 걸기
+            User user = userRepository.findByIdForUpdate(userId)
                     .orElseThrow(() -> new CustomException(ExceptionType.USER_NOT_FOUND));
 
             Store store = storeRepository.findById(storeId)
                     .orElseThrow(() -> new CustomException(ExceptionType.STORE_NOT_FOUND));
 
-            // 현재 사용자의 활성 웨이팅 상태 확인하여 중복 웨이팅 방지 (비관적 락 적용)
-            waitingRepository.findByUserIdAndStatusInWithPessimisticLock(userId, List.of(WaitingStatus.REQUESTED, WaitingStatus.WAITING, WaitingStatus.CALLED))
-                    .ifPresent(waiting -> {
-                        throw new CustomException(ExceptionType.SINGLE_WAIT_ALLOWED);
-                    });
+            // 활성 웨이팅 있는지 조회 (락 없음)
+            boolean hasActiveWaiting = waitingRepository.existsByUserIdAndStatusIn(
+                    userId,
+                    List.of(WaitingStatus.REQUESTED, WaitingStatus.WAITING, WaitingStatus.CALLED)
+            );
 
+            if (hasActiveWaiting) {
+                throw new CustomException(ExceptionType.SINGLE_WAIT_ALLOWED);
+            }
 
             // 고유한 주문 ID 생성
             String orderId = UUID.randomUUID().toString();
@@ -129,7 +136,7 @@ public class WaitingServiceImpl implements WaitingService {
         try {
 
             // 비관적 락으로 웨이팅 정보 가져오기
-            Waiting waiting = waitingRepository.findByIdWithPessimisticLock(waitingId)
+            Waiting waiting = waitingRepository.findByIdForUpdate(waitingId)
                     .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
             // 취소 권한 확인 (본인인지 확인)
@@ -159,7 +166,7 @@ public class WaitingServiceImpl implements WaitingService {
     public UpdateWaitingResponse updateWaitingStatus(Long userId, Long waitingId, UpdateWaitingRequest updateWaitingRequest) {
         try {
             // 비관적 락으로 웨이팅 정보 가져오기
-            Waiting waiting = waitingRepository.findByIdWithPessimisticLock(waitingId)
+            Waiting waiting = waitingRepository.findByIdForUpdate(waitingId)
                     .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
             // 가게 주인 확인 로직

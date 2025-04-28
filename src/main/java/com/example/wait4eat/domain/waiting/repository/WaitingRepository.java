@@ -15,13 +15,12 @@ public interface WaitingRepository extends JpaRepository<Waiting, Long>, Waiting
 
     Optional<Waiting> findByOrderId(String orderId);
 
+    // 웨이팅 존재 여부만 체크
+    boolean existsByUserIdAndStatusIn(Long userId, List<WaitingStatus> statuses);
+
     // 비관적 락을 위한 메서드
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select w from Waiting w where w.id = :id")
-    Optional<Waiting> findByIdWithPessimisticLock(@Param("id") Long id);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select w from Waiting w where w.user.id = :userId and w.status in :statuses")
-    Optional<Waiting> findByUserIdAndStatusInWithPessimisticLock(@Param("userId") Long userId, @Param("statuses") List<WaitingStatus> statuses);
+    Optional<Waiting> findByIdForUpdate(@Param("id") Long id);
 
 }
