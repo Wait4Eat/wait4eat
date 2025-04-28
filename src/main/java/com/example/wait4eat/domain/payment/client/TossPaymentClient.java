@@ -1,5 +1,6 @@
 package com.example.wait4eat.domain.payment.client;
 
+import com.example.wait4eat.domain.payment.client.dto.TossCancelPaymentResponse;
 import com.example.wait4eat.domain.payment.client.dto.TossConfirmPaymentResponse;
 import com.example.wait4eat.domain.payment.client.dto.TossErrorResponse;
 import com.example.wait4eat.domain.payment.client.exception.TossPaymentConfirmFailedException;
@@ -45,6 +46,43 @@ public class TossPaymentClient {
             ResponseEntity<TossConfirmPaymentResponse> response = restTemplate.exchange(
                     url, HttpMethod.POST, request, TossConfirmPaymentResponse.class
             );
+
+            return response.getBody();
+        } catch (HttpClientErrorException e) {
+            log.error("Toss API 에러 응답: {}", e.getResponseBodyAsString());
+
+            try {
+                String responseBody = e.getResponseBodyAsString();
+                if (responseBody == null || responseBody.isBlank()) {
+                    throw new RuntimeException("Toss API 응답이 비어 있습니다.");
+                }
+
+                TossErrorResponse errorResponse = objectMapper.readValue(
+                        responseBody, TossErrorResponse.class
+                );
+
+                throw new TossPaymentConfirmFailedException(
+                        errorResponse.getCode(),
+                        errorResponse.getMessage()
+                );
+            } catch (Exception ex) {
+                throw new RuntimeException("Toss API 에러 파싱 실패", ex);
+            }
+        }
+    }
+
+    public TossCancelPaymentResponse cancelPayment(String paymentKey, String cancelReason) {
+        String url = "https://api.tosspayments.com/v1/payments/"+paymentKey+"/cancel";
+        HttpHeaders headers = getHeaders();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("cancelReason", cancelReason);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+        try {
+            ResponseEntity<TossCancelPaymentResponse> response = restTemplate.exchange(
+                    url, HttpMethod.POST, request, TossCancelPaymentResponse.class);
 
             return response.getBody();
         } catch (HttpClientErrorException e) {
