@@ -4,8 +4,7 @@ import com.example.wait4eat.client.SlackNotificationService;
 import com.example.wait4eat.domain.coupon.entity.Coupon;
 import com.example.wait4eat.domain.payment.client.dto.TossCancelPaymentResponse;
 import com.example.wait4eat.domain.payment.client.dto.TossConfirmPaymentResponse;
-import com.example.wait4eat.domain.payment.client.exception.TossPaymentCancelFailedException;
-import com.example.wait4eat.domain.payment.client.exception.TossPaymentConfirmFailedException;
+import com.example.wait4eat.domain.payment.client.exception.TossPaymentErrorException;
 import com.example.wait4eat.domain.payment.dto.request.ConfirmPaymentRequest;
 import com.example.wait4eat.domain.payment.entity.PrePayment;
 import com.example.wait4eat.domain.payment.enums.PrePaymentStatus;
@@ -17,9 +16,7 @@ import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.domain.coupon.repository.CouponRepository;
 import com.example.wait4eat.domain.payment.client.TossPaymentClient;
 import com.example.wait4eat.domain.payment.dto.request.PreparePaymentRequest;
-import com.example.wait4eat.domain.payment.dto.request.RefundPaymentRequest;
 import com.example.wait4eat.domain.payment.dto.response.PreparePaymentResponse;
-import com.example.wait4eat.domain.payment.dto.response.RefundPaymentResponse;
 import com.example.wait4eat.domain.payment.dto.response.SuccessPaymentResponse;
 import com.example.wait4eat.domain.payment.entity.Payment;
 import com.example.wait4eat.domain.payment.enums.PaymentStatus;
@@ -142,7 +139,7 @@ public class PaymentServiceImpl implements PaymentService {
             eventPublisher.publishEvent(PaymentConfirmedEvent.of(payment, payment.getWaiting()));
 
             return SuccessPaymentResponse.from(payment);
-        } catch (TossPaymentConfirmFailedException e) {
+        } catch (TossPaymentErrorException e) {
             log.warn("[confirmPayment] toss confirmation failed: orderId={}, paymentKey={}, reason={}",
                     orderId, paymentKey, e.getMessage());
 
@@ -185,7 +182,7 @@ public class PaymentServiceImpl implements PaymentService {
                     payment.getId(), payment.getRefundedAt());
 
             eventPublisher.publishEvent(PaymentRefundedEvent.from(payment));
-        } catch (TossPaymentCancelFailedException e) {
+        } catch (TossPaymentErrorException e) {
             log.warn("[refundPayment] toss cancel failed: paymentId={}, paymentKey={}, reason={}",
                     paymentId, payment.getPaymentKey(), e.getMessage());
 
