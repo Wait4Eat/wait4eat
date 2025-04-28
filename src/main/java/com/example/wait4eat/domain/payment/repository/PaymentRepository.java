@@ -22,13 +22,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("""
     SELECT COALESCE(SUM(p.amount), 0)
     FROM Payment p
-    WHERE p.status = :status AND p.paidAt BETWEEN :startDate AND :endDate
-    """)
-    BigDecimal sumSalesByDate(LocalDateTime startDate, LocalDateTime endDate, PaymentStatus status);
-
-    @Query("""
-    SELECT COALESCE(SUM(p.amount), 0)
-    FROM Payment p
     WHERE p.waiting.store = :store AND p.createdAt BETWEEN :startDate AND :endDate
     """)
     BigDecimal sumAmountByStoreAndCreatedAtBetween(Store store, LocalDateTime startDate, LocalDateTime endDate);
