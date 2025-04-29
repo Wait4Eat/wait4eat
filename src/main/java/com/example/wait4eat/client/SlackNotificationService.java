@@ -1,5 +1,6 @@
 package com.example.wait4eat.client;
 
+import com.example.wait4eat.domain.payment.entity.Payment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,5 +21,13 @@ public class SlackNotificationService {
         String payload = "{\"text\" : \"" + message + "\"}";
         restTemplate.postForObject(slackWebhookUrl, payload, String.class);
         log.info("Slack notification sent to slack webhook: {}", payload);
+    }
+
+    public void sendRefundFailedNotification(Payment payment, String reason) {
+        String message = String.format(
+                "[Failed to Refund] paymentId=%d, paymentKey=%s, reason=%s",
+                payment.getId(), payment.getPaymentKey(), reason
+        );
+        sendNotificationToSlack(message);
     }
 }
