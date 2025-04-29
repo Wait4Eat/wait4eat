@@ -68,7 +68,7 @@ public class WaitingPerformanceTest {
                     Store newStore = storeRepository.save(Store.builder()
                             .user(owner)
                             .name("Store3")
-                            .address("서울특별시 도봉구 도봉로150길 42 (방학동, 삼성래미안아파트2차)")
+                            .address("서울특별시 도봉구 도봉로150길 42")
                             .openTime(LocalTime.of(9, 30))
                             .closeTime(LocalTime.of(20, 30))
                             .description("Test Store3")
@@ -116,14 +116,16 @@ public class WaitingPerformanceTest {
     void measureWaitingTime() {
         log.info("가게 ID: {}", store.getId()); // 생성된 store 객체의 ID 사용
 
-        // DB로 웨이팅 조회 (레디스 적용 전: #66)
-//        long dbStartTime = System.nanoTime();
-//        int dbWaitingCount = waitingRepository.countByStoreIdAndStatus(store.getId(), WaitingStatus.WAITING);
-//        long dbEndTime = System.nanoTime();
-//        log.info("DB 웨이팅 조회 시간 (개수): {} ms", (dbEndTime - dbStartTime) / 1_000_000.0);
-//        log.info("DB 웨이팅 개수: {}", dbWaitingCount);
+        // DB로 웨이팅 조회 (#66)
+        /*
+        long dbStartTime = System.nanoTime();
+        int dbWaitingCount = waitingRepository.countByStoreIdAndStatus(store.getId(), WaitingStatus.WAITING);
+        long dbEndTime = System.nanoTime();
+        log.info("DB 웨이팅 조회 시간 (개수): {} ms", (dbEndTime - dbStartTime) / 1_000_000.0);
+        log.info("DB 웨이팅 개수: {}", dbWaitingCount);
+         */
 
-        // 레디스로 웨이팅 조회 (기존 방식 유지 - DB ID 사용)
+        // 레디스로 웨이팅 조회 (#92)
         long redisStartTime = System.nanoTime();
         String redisKey = waitingRedisService.generateKey(store.getId()); // 생성된 store 객체의 ID 사용
         int redisWaitingCount = waitingRepository.countByStoreIdAndStatus(store.getId(), WaitingStatus.WAITING);
