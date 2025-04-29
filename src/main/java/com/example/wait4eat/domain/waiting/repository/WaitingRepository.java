@@ -23,4 +23,6 @@ public interface WaitingRepository extends JpaRepository<Waiting, Long>, Waiting
     @Query("select w from Waiting w where w.id = :id")
     Optional<Waiting> findByIdForUpdate(@Param("id") Long id);
 
+    // 레디스 성능 테스트를 위한 메서드
+    List<Waiting> findByStoreIdAndStatus(Long storeId, WaitingStatus waitingStatus);
 }
