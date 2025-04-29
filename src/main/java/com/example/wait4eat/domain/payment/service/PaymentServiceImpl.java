@@ -27,6 +27,7 @@ import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import com.example.wait4eat.global.auth.dto.AuthUser;
 import com.example.wait4eat.global.exception.CustomException;
 import com.example.wait4eat.global.exception.ExceptionType;
+import com.example.wait4eat.global.util.DateTimeUtils;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -128,7 +129,7 @@ public class PaymentServiceImpl implements PaymentService {
                             .originalAmount(prePayment.getOriginalAmount())
                             .amount(successResponse.getTotalAmount())
                             .status(PaymentStatus.SUCCEEDED)
-                            .paidAt(successResponse.getApprovedAt().toLocalDateTime())
+                            .paidAt(DateTimeUtils.toKstLocalDateTime(successResponse.getApprovedAt()))
                             .build()
             );
 
@@ -170,7 +171,7 @@ public class PaymentServiceImpl implements PaymentService {
         try {
             TossCancelPaymentResponse response = tossPaymentClient.cancelPayment(payment.getPaymentKey(), refundReason);
 
-            payment.markAsRefunded(response.getCancels().get(0).getCanceledAt().toLocalDateTime());
+            payment.markAsRefunded(DateTimeUtils.toKstLocalDateTime(response.getCancels().get(0).getCanceledAt()));
             log.info("[refundPayment] Payment refunded successfully: paymentId={}, canceledAt={}",
                     payment.getId(), payment.getRefundedAt());
 
