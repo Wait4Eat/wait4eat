@@ -41,6 +41,7 @@
     // 쿼리 파라미터 값을 서버로 전달해 결제 요청할 때 보낸 데이터와 동일한지 반드시 확인하세요.
     // 클라이언트에서 결제 금액을 조작하는 행위를 방지할 수 있습니다.
     const urlParams = new URLSearchParams(window.location.search);
+    const token = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ1c2VyMUBleGFtcGxlLmNvbSIsInVzZXJSb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzQ4MzI2OTcyLCJpYXQiOjE3NDU3MzQ5NzJ9.mJpJGSiM41cFmuoeNh7vdKzpXWsnBiBuxK5H51iRzCU';
 
     // 서버로 결제 승인에 필요한 결제 정보를 보내세요.
     async function confirm() {
@@ -53,7 +54,8 @@
         const response = await fetch("/api/v1/payments/confirm", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(requestData),
         });
