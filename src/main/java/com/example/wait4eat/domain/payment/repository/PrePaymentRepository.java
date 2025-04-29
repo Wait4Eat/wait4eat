@@ -11,4 +11,6 @@ public interface PrePaymentRepository extends JpaRepository<PrePayment, Long> {
 
     @EntityGraph(attributePaths = {"user", "waiting", "coupon"})
     Optional<PrePayment> findByOrderIdAndStatus(String orderId, PrePaymentStatus status);
+
+    Optional<PrePayment> findByOrderId(String orderId);
 }

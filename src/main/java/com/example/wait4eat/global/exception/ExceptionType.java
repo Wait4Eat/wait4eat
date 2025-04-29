@@ -46,6 +46,7 @@ public enum ExceptionType {
     COUPON_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 쿠폰을 찾을 수 없습니다."),
     COUPON_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,  "이미 발급받은 쿠폰입니다."),
     COUPON_SOLD_OUT(HttpStatus.BAD_REQUEST,  "선착순 쿠폰이 소진되었습니다."),
+    COUPON_ALREADY_USED(HttpStatus.BAD_REQUEST, "이미 사용된 쿠폰입니다."),
 
     // Coupon Event
     COUPON_EVENT_NOT_FOUND(HttpStatus.NOT_FOUND,  "해당 쿠폰 이벤트를 찾을 수 없습니다."),
@@ -78,10 +79,13 @@ public enum ExceptionType {
 
     // Payment
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 주문을 찾을 수 없습니다."),
+    INVALID_PREPAYMENT_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 가결제 데이터 요청입니다."),
     PREPAYMENT_DOES_NOT_EXIST(HttpStatus.CONFLICT, "가주문 데이터가 존재하지 않아 결제 승인에 실패했습니다."),
+    INVALID_PAYMENT_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 결제 승인 요청입니다."),
     PREPAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "가주문 데이터와 금액이 일치하지 않습니다."),
     PAYMENT_CONFIRM_REQUEST_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"결제 승인 요청 전송에 실패했습니다. 다시 시도해주세요."),
     PAYMENT_CONFIRM_FAILED(HttpStatus.CONFLICT, "결제에 실패했습니다."),
+    INVALID_REFUND_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 환불 요청입니다."),
 
     // File
     FILE_LIST_EMPTY(HttpStatus.BAD_REQUEST, "업로드할 파일을 1개 이상 첨부해주세요."),

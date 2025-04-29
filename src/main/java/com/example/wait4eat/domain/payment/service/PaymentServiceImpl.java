@@ -11,6 +11,7 @@ import com.example.wait4eat.domain.payment.enums.PrePaymentStatus;
 import com.example.wait4eat.domain.payment.event.PaymentConfirmedEvent;
 import com.example.wait4eat.domain.payment.event.PaymentRefundedEvent;
 import com.example.wait4eat.domain.payment.repository.PrePaymentRepository;
+import com.example.wait4eat.domain.payment.validator.PaymentValidator;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.user.repository.UserRepository;
 import com.example.wait4eat.domain.coupon.repository.CouponRepository;
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -49,7 +51,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final TossPaymentClient tossPaymentClient;
     private final ApplicationEventPublisher eventPublisher;
     private final SlackNotificationService slackNotificationService;
-
+    private final PaymentValidator paymentValidator;
 
     @Override
     @Transactional
@@ -60,25 +62,26 @@ public class PaymentServiceImpl implements PaymentService {
 
         log.info("[preparePayment] userId={}, email={}", user.getId(), user.getEmail());
 
-
-        // TODO : 유효한 웨이팅인지 확인 필요
         Waiting waiting = waitingRepository.findById(request.getWaitingId())
                 .orElseThrow(() -> new CustomException(ExceptionType.WAITING_NOT_FOUND));
 
-        if (!waiting.getUser().getId().equals(user.getId())) {
-            throw new CustomException(ExceptionType.NO_PERMISSION_ACTION, "웨이팅 당사자만 결제가 가능합니다.");
-        }
-
-        // TODO : 유효한 쿠폰인지 확인 필요
         Coupon coupon = couponRepository.findById(request.getCouponId())
                 .orElseThrow(() -> new CustomException(ExceptionType.COUPON_NOT_FOUND));
+
+        Optional<PrePayment> optionalPrePayment = prePaymentRepository.findByOrderId(waiting.getOrderId());
+
+        paymentValidator.validatePreparePayment(user, waiting, coupon, optionalPrePayment);
+
+        if (optionalPrePayment.isPresent()) {
+            log.info("[preparePayment] Existing PrePayment reuse: prePaymentId={}, orderId={}", optionalPrePayment.get().getId(), optionalPrePayment.get().getOrderId());
+            return PreparePaymentResponse.from(optionalPrePayment.get());
+        }
 
         int originalAmount = waiting.getStore().getDepositAmount();
         int discountAmount = coupon.getDiscountAmount().intValue();
         int amount = Math.max(originalAmount - discountAmount, 0);
 
-        // TODO : 같은 orderId를 가진 REQUESTED 상태의 PrePayment가 있는지 확인 필요
-        PrePayment prePayment = prePaymentRepository.save(
+        PrePayment newPrePayment = prePaymentRepository.save(
                 PrePayment.builder()
                         .user(user)
                         .waiting(waiting)
@@ -90,9 +93,9 @@ public class PaymentServiceImpl implements PaymentService {
                         .build()
         );
 
-        log.info("[preparePayment] PrePayment saved: prePaymentId={}, orderId={}", prePayment.getId(), prePayment.getOrderId());
+        log.info("[preparePayment] PrePayment saved: prePaymentId={}, orderId={}", newPrePayment.getId(), newPrePayment.getOrderId());
 
-        return PreparePaymentResponse.from(prePayment);
+        return PreparePaymentResponse.from(newPrePayment);
     }
 
     @Override
@@ -104,15 +107,11 @@ public class PaymentServiceImpl implements PaymentService {
 
         log.info("[confirmPayment] start confirmation: orderId={}, paymentKey={}, amount={}", orderId, paymentKey, amount);
 
-        PrePayment prePayment = prePaymentRepository.findByOrderIdAndStatus(orderId, PrePaymentStatus.REQUESTED)
+        PrePayment prePayment = prePaymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new CustomException(ExceptionType.PREPAYMENT_DOES_NOT_EXIST));
 
-        // 가주문 데이터와 일치하는지 확인
-        if (amount == null || prePayment.getAmount() == null || prePayment.getAmount().compareTo(amount) != 0) {
-            log.warn("[confirmPayment] payment amount mismatch: orderId={}, expected={}, actual={}",
-                    orderId, prePayment.getAmount(), amount);
-            throw new CustomException(ExceptionType.PREPAYMENT_AMOUNT_MISMATCH);
-        }
+        boolean paymentAlreadyExists = paymentRepository.existsByOrderId(orderId);
+        paymentValidator.validateConfirmPayment(prePayment, amount, paymentAlreadyExists);
 
         try {
             TossConfirmPaymentResponse successResponse = tossPaymentClient.confirmPayment(paymentKey, orderId, amount);
@@ -134,8 +133,6 @@ public class PaymentServiceImpl implements PaymentService {
             );
 
             prePayment.markAsCompleted();
-            log.info("[confirmPayment] Payment saved: paymentId={}, status=SUCCEEDED", payment.getId());
-
             eventPublisher.publishEvent(PaymentConfirmedEvent.of(payment, payment.getWaiting()));
 
             return SuccessPaymentResponse.from(payment);
@@ -143,7 +140,7 @@ public class PaymentServiceImpl implements PaymentService {
             log.warn("[confirmPayment] toss confirmation failed: orderId={}, paymentKey={}, reason={}",
                     orderId, paymentKey, e.getMessage());
 
-            paymentRepository.save(
+            Payment payment = paymentRepository.save(
                     Payment.builder()
                             .paymentKey(paymentKey)
                             .orderId(orderId)
@@ -168,11 +165,7 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new CustomException(ExceptionType.PAYMENT_NOT_FOUND));
 
-        if (payment.getStatus() != PaymentStatus.SUCCEEDED) {
-            log.warn("[refundPayment] invalid payment status for refund: paymentId={}, status={} ",
-                    paymentId, payment.getStatus());
-            throw new IllegalArgumentException("환불 가능한 상태가 아닙니다.");
-        }
+        paymentValidator.validateRefundPayment(payment);
 
         try {
             TossCancelPaymentResponse response = tossPaymentClient.cancelPayment(payment.getPaymentKey(), refundReason);
@@ -187,14 +180,8 @@ public class PaymentServiceImpl implements PaymentService {
                     paymentId, payment.getPaymentKey(), e.getMessage());
 
             payment.markAsRefundFailed();
-            slackNotificationService.sendNotificationToSlack(
-                    String.format(
-                            "[환불 실패] paymentId=%d, paymentKey=%s, 이유=%s",
-                            payment.getId(),
-                            payment.getPaymentKey(),
-                            e.getMessage()
-                    )
-            );
+            slackNotificationService.sendRefundFailedNotification(payment, e.getMessage());
+
             throw new CustomException(ExceptionType.PAYMENT_CONFIRM_FAILED, e.getMessage());
         }
     }
