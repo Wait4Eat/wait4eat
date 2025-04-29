@@ -185,8 +185,7 @@ public class WaitingServiceImpl implements WaitingService {
         }
     }
 
-    @Override
-    public boolean updateWaiting(WaitingStatus newStatus, Waiting waiting) {
+    private boolean updateWaiting(WaitingStatus newStatus, Waiting waiting) {
         WaitingStatus currentStatus = waiting.getStatus();
 
         boolean updated = false;
