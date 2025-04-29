@@ -55,10 +55,14 @@ public class Payment {
     private LocalDateTime refundedAt;
     private LocalDateTime failedAt;
     private LocalDateTime cancelledAt;
+    private LocalDateTime verifiedAt;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private Boolean verified = false;
 
     @Builder
     private Payment(
@@ -89,6 +93,11 @@ public class Payment {
         this.cancelledAt = cancelledAt;
     }
 
+    public void markAsSucceeded() {
+        this.status = PaymentStatus.SUCCEEDED;
+        this.failedAt = LocalDateTime.now();
+    }
+
     public void markAsFailed() {
         this.status = PaymentStatus.FAILED;
         this.failedAt = LocalDateTime.now();
@@ -102,5 +111,22 @@ public class Payment {
     public void markAsRefundFailed() {
         this.status = PaymentStatus.REFUND_FAILED;
         this.failedAt = LocalDateTime.now();
+    }
+
+    public boolean isPaid() {
+        return this.status.equals(PaymentStatus.SUCCEEDED);
+    }
+
+    public boolean isFailed() {
+        return this.status.equals(PaymentStatus.FAILED);
+    }
+
+    public boolean isRefunded() {
+        return this.status.equals(PaymentStatus.REFUND_COMPLETED);
+    }
+
+    public void markVerified() {
+        this.verified = true;
+        this.verifiedAt = LocalDateTime.now();
     }
 }
