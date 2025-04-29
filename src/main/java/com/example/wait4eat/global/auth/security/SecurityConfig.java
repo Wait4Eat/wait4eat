@@ -4,6 +4,7 @@ package com.example.wait4eat.global.auth.security;
 import com.example.wait4eat.domain.user.enums.UserRole;
 import com.example.wait4eat.global.auth.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -30,6 +31,9 @@ import java.util.List;
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
+    @Value("${webhook.toss.endpoint}")
+    private String tossWebhookEndpoint;
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
@@ -52,7 +56,8 @@ public class SecurityConfig {
                 .logout(AbstractHttpConfigurer::disable)
                 .rememberMe(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/test-sse.html", "/css/**", "/payment/**", "/images/**", "/api/v1/payments/confirm").permitAll()
+                        .requestMatchers("/test-sse.html", "/css/**", "/payment/**", "/images/**").permitAll()
+                        .requestMatchers("/" + tossWebhookEndpoint).permitAll()
                         .requestMatchers(request -> request.getRequestURI().startsWith("/api/v1/notifications/subscribe")).permitAll()
                         .requestMatchers(request -> request.getRequestURI().startsWith("/api/v1/auth")).permitAll()
                         .anyRequest().authenticated()
