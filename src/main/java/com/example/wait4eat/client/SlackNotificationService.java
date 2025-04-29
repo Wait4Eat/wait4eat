@@ -30,4 +30,24 @@ public class SlackNotificationService {
         );
         sendNotificationToSlack(message);
     }
+
+    public void sendUnexpectedWebhookStatusNotification(
+            String orderId,
+            String webhookStatus,
+            String currentPaymentStatus,
+            String currentPrePaymentStatus
+    ) {
+        String message = String.format(
+                "[Unexpected Webhook Status Received]\n" +
+                        "- orderId: %s\n" +
+                        "- webhookStatus: %s\n" +
+                        "- currentPrePaymentStatus: %s\n"+
+                        "- currentPaymentStatus: %s",
+                orderId,
+                webhookStatus,
+                currentPrePaymentStatus != null ? currentPrePaymentStatus : "null",
+                currentPaymentStatus != null ? currentPaymentStatus : "null"
+        );
+        sendNotificationToSlack(message);
+    }
 }
