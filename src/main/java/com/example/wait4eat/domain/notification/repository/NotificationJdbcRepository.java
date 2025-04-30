@@ -22,7 +22,7 @@ public class NotificationJdbcRepository {
     public void saveAll(List<Notification> notifications) {
         jdbcTemplate.batchUpdate(INSERT_SQL, notifications, 1000,
                 ((ps, notification) -> {
-                    ps.setLong(1, notification.getId());
+                    ps.setString(1, notification.getId());
                     ps.setLong(2, notification.getUser().getId());
                     ps.setString(3, notification.getText());
                     ps.setString(4, notification.getType().name());

@@ -11,14 +11,14 @@ import java.time.LocalDateTime;
 @Getter
 public class NotificationResponse {
 
-    private final Long id;
+    private final String id;
     private final NotificationType type;
     private final Boolean isRead;
     private final String text;
     private final LocalDateTime createdAt;
 
     @Builder
-    private NotificationResponse(Long id, NotificationType type, Boolean isRead, String text, LocalDateTime createdAt) {
+    private NotificationResponse(String id, NotificationType type, Boolean isRead, String text, LocalDateTime createdAt) {
         this.id = id;
         this.type = type;
         this.isRead = isRead;

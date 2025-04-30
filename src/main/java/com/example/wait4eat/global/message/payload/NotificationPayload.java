@@ -10,12 +10,12 @@ public class NotificationPayload implements MessagePayload {
 
     private final String messageKey;
     private final AggregateType aggregateType;
-    private final Long notificationId;
+    private final String notificationId;
     private final Long targetUserId;
     private final NotificationType notificationType;
     private final String message;
 
-    public NotificationPayload(String messageKey, AggregateType aggregateType, Long notificationId, Long targetUserId, NotificationType notificationType, String message) {
+    public NotificationPayload(String messageKey, AggregateType aggregateType, String notificationId, Long targetUserId, NotificationType notificationType, String message) {
         this.messageKey = messageKey;
         this.aggregateType = aggregateType;
         this.notificationId = notificationId;
@@ -28,7 +28,7 @@ public class NotificationPayload implements MessagePayload {
         return this.messageKey;
     }
 
-    public Long getAggregateId() {
+    public String getAggregateId() {
         return this.notificationId;
     }
 

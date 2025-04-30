@@ -30,7 +30,7 @@ public class OutboxMessage {
     private String aggregateType;
 
     @Column
-    private Long aggregateId;
+    private String aggregateId;
 
     @Column(nullable = false)
     private String payload;
@@ -49,7 +49,7 @@ public class OutboxMessage {
     private LocalDateTime sentAt;
 
     @Builder
-    public OutboxMessage(String id, String aggregateType, Long aggregateId, String payload) {
+    public OutboxMessage(String id, String aggregateType, String aggregateId, String payload) {
         this.id = id;
         this.aggregateType = aggregateType;
         this.aggregateId = aggregateId;
