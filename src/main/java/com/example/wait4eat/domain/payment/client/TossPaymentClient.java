@@ -3,6 +3,7 @@ package com.example.wait4eat.domain.payment.client;
 import com.example.wait4eat.domain.payment.client.dto.TossCancelPaymentResponse;
 import com.example.wait4eat.domain.payment.client.dto.TossConfirmPaymentResponse;
 import com.example.wait4eat.domain.payment.client.dto.TossErrorResponse;
+import com.example.wait4eat.domain.payment.client.dto.TossPaymentData;
 import com.example.wait4eat.domain.payment.client.exception.TossPaymentErrorException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
@@ -51,6 +52,28 @@ public class TossPaymentClient {
         body.put("cancelReason", cancelReason);
 
         return sendPostRequest(url, body, TossCancelPaymentResponse.class, true);
+    }
+
+    public TossPaymentData queryPayment(String paymentKey) {
+        String url = "https://api.tosspayments.com/v1/payments/" + paymentKey;
+
+        HttpHeaders headers = createHeaders();
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<TossPaymentData> response =
+                    restTemplate.exchange(url, HttpMethod.GET, request, TossPaymentData.class);
+
+            return response.getBody();
+
+        } catch (HttpClientErrorException e) {
+            log.error("[Toss 결제 조회 오류] 상태코드={}, URL={}, paymentKey={}",
+                    e.getStatusCode(), url, paymentKey);
+            throw parseTossPaymentError(e);
+        } catch (Exception e) {
+            log.error("[Toss 결제 조회 실패] URL={}, paymentKey={}, 오류={}", url, paymentKey, e.getMessage());
+            throw new RuntimeException("Toss 결제 상태 조회 실패", e);
+        }
     }
 
     private <T> T sendPostRequest(String url, Map<String, Object> body, Class<T> responseType, boolean retry) {
