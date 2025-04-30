@@ -1,6 +1,6 @@
 package com.example.wait4eat.domain.payment.controller;
 
-import com.example.wait4eat.domain.payment.dto.TossWebhookPayload;
+import com.example.wait4eat.domain.payment.dto.request.TossWebhookPayload;
 import com.example.wait4eat.domain.payment.service.PaymentVerificationService;
 import com.example.wait4eat.global.dto.response.SuccessResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ public class PaymentWebhookController {
 
     @PostMapping("${webhook.toss.endpoint}")
     public SuccessResponse tossWebhook(@RequestBody TossWebhookPayload payload) {
-        paymentVerificationService.verifyWebhook(payload);
+        paymentVerificationService.verifyFromWebhook(payload);
         return SuccessResponse.from(true);
     }
 }
