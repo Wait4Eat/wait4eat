@@ -34,9 +34,9 @@ public class WaitingCalledEventHandler {
 
         NotificationMessagePublishRequest notificationMessagePublishRequest = new NotificationMessagePublishRequest(
                 MessageType.WAITING_CALLED,
-                NotificationType.COUPON_EVENT_LAUNCHED.getMessage(),
+                NotificationType.WAITING_CALLED.getMessage(),
                 List.of(user),
-                NotificationType.COUPON_EVENT_LAUNCHED
+                NotificationType.WAITING_CALLED
         );
 
         List<OutboxMessage> outboxes = messageStagingService.stage(notificationMessagePublishRequest);
