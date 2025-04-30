@@ -22,8 +22,8 @@ public class EventMessagePayload implements MessagePayload {
         return messageKey;
     }
 
-    public Long getAggregateId() {
-        return targetId;
+    public String getAggregateId() {
+        return String.valueOf(targetId);
     }
 
     public String getAggregateType() {

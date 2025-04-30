@@ -24,7 +24,7 @@ public class OutboxJdbcRepository {
                 ((ps, msg) -> {
                     ps.setString(1, msg.getId());
                     ps.setString(2, msg.getAggregateType());
-                    ps.setLong(3, msg.getAggregateId());
+                    ps.setString(3, msg.getAggregateId());
                     ps.setString(4, msg.getPayload());
                     ps.setString(5, msg.getStatus().name());
                     ps.setInt(6, msg.getRetryCount());

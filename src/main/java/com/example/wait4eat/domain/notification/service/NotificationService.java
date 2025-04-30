@@ -42,6 +42,19 @@ public class NotificationService {
     }
 
     @Transactional
+    public List<Notification> createAll(List<User> users, NotificationType notificationType, String message) {
+        List<Notification> notifications = users.stream()
+                .map(user -> Notification.builder()
+                        .user(user)
+                        .type(notificationType)
+                        .text(message)
+                        .build())
+                .toList();
+
+        return notificationRepository.saveAll(notifications);
+    }
+
+    @Transactional
     public List<Notification> createBulk(List<User> users, NotificationType type, String message) {
         List<Notification> notifications = users.stream()
                 .map(user -> Notification.builder()

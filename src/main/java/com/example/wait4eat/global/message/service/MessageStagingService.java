@@ -1,6 +1,7 @@
 package com.example.wait4eat.global.message.service;
 
 import com.example.wait4eat.domain.notification.entity.Notification;
+import com.example.wait4eat.domain.notification.enums.NotificationType;
 import com.example.wait4eat.domain.notification.service.NotificationService;
 import com.example.wait4eat.global.message.dto.EventMessagePublishRequest;
 import com.example.wait4eat.global.message.dto.NotificationMessagePublishRequest;
