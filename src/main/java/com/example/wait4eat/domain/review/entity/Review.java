@@ -33,6 +33,9 @@ public class Review {
     @Column(nullable = false)
     private double rating;
 
+    @Column(nullable = false)
+    private boolean isBlinded;
+
     @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -42,10 +45,11 @@ public class Review {
     private LocalDateTime modifiedAt;
 
     @Builder
-    private Review(Waiting waiting, double rating, String content) {
+    private Review(Waiting waiting, double rating, String content, boolean isBlinded) {
         this.waiting = waiting;
         this.rating = rating;
         this.content = content;
+        this.isBlinded = isBlinded;
     }
 
     public Long getUserId() {
@@ -56,8 +60,9 @@ public class Review {
         return (waiting != null) ? waiting.getStore().getId() : null;
     }
 
-    public void update(String content, double rating) {
+    public void update(String content, double rating, boolean isBlinded) {
         this.content = content;
         this.rating = rating;
+        this.isBlinded = isBlinded;
     }
 }

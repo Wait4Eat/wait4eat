@@ -79,6 +79,10 @@ dependencies {
 
     // batch
     implementation 'org.springframework.boot:spring-boot-starter-batch'
+
+    // Ai 연동
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.json:json:20210307'
 }
 
 tasks.named('test') {

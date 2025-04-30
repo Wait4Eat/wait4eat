@@ -28,6 +28,7 @@ public class ReviewService {
     private final WaitingRepository waitingRepository;
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
+    private final OpenAiService openAiService;
 
     @Transactional
     public ReviewResponse createReview(CreateReviewRequest request) {
@@ -42,10 +43,13 @@ public class ReviewService {
             throw new CustomException(ExceptionType.WAITING_NOT_COMPLETED);
         }
 
+        boolean isBlinded = openAiService.isNegativeContent(request.getContent());
+
         Review savedReview = reviewRepository.save(Review.builder()
                 .waiting(findWaiting)
                 .content(request.getContent())
                 .rating(request.getRating())
+                .isBlinded(isBlinded)
                 .build());
 
         return ReviewResponse.from(savedReview);
@@ -78,7 +82,9 @@ public class ReviewService {
             throw new CustomException(ExceptionType.NO_PERMISSION_ACTION);
         }
 
-        findReview.update(request.getContent(), request.getRating());
+        boolean isBlinded = openAiService.isNegativeContent(request.getContent());
+
+        findReview.update(request.getContent(), request.getRating(), isBlinded);
         Review updatedReview = reviewRepository.save(findReview);
         return ReviewResponse.from(updatedReview);
     }

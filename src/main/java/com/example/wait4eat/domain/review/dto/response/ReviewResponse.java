@@ -28,14 +28,27 @@ public class ReviewResponse {
     }
 
     public static ReviewResponse from(Review review) {
-        return ReviewResponse.builder()
-                .id(review.getId())
-                .userId(review.getUserId())
-                .storeId(review.getStoreId())
-                .content(review.getContent())
-                .rating(review.getRating())
-                .createdAt(review.getCreatedAt())
-                .modifiedAt(review.getModifiedAt())
-                .build();
+        if (review.isBlinded()) {
+            return ReviewResponse.builder()
+                    .id(review.getId())
+                    .userId(review.getUserId())
+                    .storeId(review.getStoreId())
+                    .content("블라인드 처리된 글입니다.")
+                    .rating(review.getRating())
+                    .createdAt(review.getCreatedAt())
+                    .modifiedAt(review.getModifiedAt())
+                    .build();
+        } else {
+            return ReviewResponse.builder()
+                    .id(review.getId())
+                    .userId(review.getUserId())
+                    .storeId(review.getStoreId())
+                    .content(review.getContent())
+                    .rating(review.getRating())
+                    .createdAt(review.getCreatedAt())
+                    .modifiedAt(review.getModifiedAt())
+                    .build();
+        }
+
     }
 }
