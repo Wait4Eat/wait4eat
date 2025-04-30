@@ -93,8 +93,4 @@ public class Waiting{
         this.myWaitingOrder = 0;
     }
 
-    public void myWaitingOrder(int myWaitingOrder) {
-        this.myWaitingOrder = myWaitingOrder;
-    }
-
 }
