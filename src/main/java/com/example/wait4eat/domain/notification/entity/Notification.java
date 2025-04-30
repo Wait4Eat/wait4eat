@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 public class Notification {
 
     @Id
-    private Long id;
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

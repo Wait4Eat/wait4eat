@@ -10,8 +10,8 @@ public class IdGenerator {
         return UUID.randomUUID().toString();
     }
 
-    public static long generateNotificationId() {
-        return System.nanoTime();
+    public static String generateNotificationId() {
+        return UUID.randomUUID().toString().substring(0,8);
     }
 
 }
