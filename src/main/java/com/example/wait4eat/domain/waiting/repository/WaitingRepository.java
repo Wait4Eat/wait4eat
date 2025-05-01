@@ -15,8 +15,6 @@ import java.util.Optional;
 
 public interface WaitingRepository extends JpaRepository<Waiting, Long>, WaitingQueryRepository {
 
-    Optional<Waiting> findByOrderId(String orderId);
-
     // 웨이팅 존재 여부만 체크
     boolean existsByUserIdAndStatusIn(Long userId, List<WaitingStatus> statuses);
 
@@ -24,8 +22,6 @@ public interface WaitingRepository extends JpaRepository<Waiting, Long>, Waiting
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select w from Waiting w where w.id = :id")
     Optional<Waiting> findByIdForUpdate(@Param("id") Long id);
-
-    Optional<Waiting> findByIdWithPessimisticLock(@Param("id") Long id);
 
     int countByStoreAndCreatedAtBetween(Store store, LocalDateTime start, LocalDateTime end);
 }
