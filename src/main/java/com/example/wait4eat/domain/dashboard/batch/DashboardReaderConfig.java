@@ -49,7 +49,7 @@ public class DashboardReaderConfig {
                 .entityManagerFactory(batchSupport.entityManagerFactory)
                 .queryString("SELECT p FROM Payment p WHERE p.status = :status AND p.paidAt BETWEEN :startDate AND :endDate")
                 .parameterValues(Map.of(
-                        "status", PaymentStatus.PAID,
+                        "status", PaymentStatus.SUCCEEDED,
                         "startDate", batchSupport.getStartDate(),
                         "endDate", batchSupport.getEndDate()
                 ))
