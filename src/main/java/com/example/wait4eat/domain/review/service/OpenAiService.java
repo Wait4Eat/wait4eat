@@ -14,35 +14,44 @@ import java.util.Map;
 public class OpenAiService {
 
     @Value("${openai.api-key}")
-    private String openAiApiKey;  // 실제 API 키로 교체
+    private String openAiApiKey;
     private final WebClient.Builder webClientBuilder;
 
     public OpenAiService(WebClient.Builder webClientBuilder) {
         this.webClientBuilder = webClientBuilder;
     }
 
+    @SuppressWarnings("unchecked")
     public boolean isNegativeContent(String content) {
-        String apiUrl = "https://api.openai.com/v1/moderations";
+        WebClient webClient = webClientBuilder
+                .baseUrl("https://api.openai.com/v1/chat/completions")
+                .build();
 
-        WebClient webClient = webClientBuilder.baseUrl(apiUrl).build();
+        Map<String, Object> requestBody = Map.of(
+                "model", "gpt-3.5-turbo",
+                "messages", List.of(
+                        Map.of("role", "system", "content", "다음 메시지에 욕설이나 부적절한 표현이 포함되어 있는지 판단해서 true 또는 false로만 대답해줘."),
+                        Map.of("role", "user", "content", content)
+                ),
+                "max_tokens", 10,
+                "temperature", 0.0
+        );
 
         Mono<Boolean> response = webClient.post()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + openAiApiKey)
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(Map.of("input", content))
+                .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(Map.class)
                 .map(responseBody -> {
-                    Object resultsObj = responseBody.get("results");
-
-                    if (resultsObj instanceof List<?> resultsList && !resultsList.isEmpty()) {
-                        Object firstResult = resultsList.get(0);
-                        if (firstResult instanceof Map<?, ?> resultMap) {
-                            Object flagged = resultMap.get("flagged");
-                            return flagged instanceof Boolean && (Boolean) flagged;
-                        }
+                    try {
+                        List<Map<String, Object>> choices =(List<Map<String, Object>>) responseBody.get("choices");
+                        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                        String reply = ((String) message.get("content")).trim().toLowerCase();
+                        return reply.contains("true");
+                    } catch (Exception e) {
+                        return false;
                     }
-                    return false;
                 });
 
         return Boolean.TRUE.equals(response.block());
