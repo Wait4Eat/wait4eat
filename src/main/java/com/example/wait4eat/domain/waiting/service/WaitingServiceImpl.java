@@ -172,7 +172,7 @@ public class WaitingServiceImpl implements WaitingService {
         }
     }
 
-    private boolean updateWaiting(WaitingStatus newStatus, Waiting waiting) {
+    public boolean updateWaiting(WaitingStatus newStatus, Waiting waiting) {
         WaitingStatus currentStatus = waiting.getStatus();
 
         boolean updated = false;

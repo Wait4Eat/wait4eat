@@ -3,6 +3,7 @@ package com.example.wait4eat.domain.waiting.service;
 import com.example.wait4eat.domain.waiting.dto.request.CreateWaitingRequest;
 import com.example.wait4eat.domain.waiting.dto.request.UpdateWaitingRequest;
 import com.example.wait4eat.domain.waiting.dto.response.*;
+import com.example.wait4eat.domain.waiting.entity.Waiting;
 import com.example.wait4eat.domain.waiting.enums.WaitingStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,8 @@ public interface WaitingService {
     CancelWaitingResponse cancelMyWaiting(Long userId, Long waitingId);
 
     UpdateWaitingResponse updateWaitingStatus(Long userId, Long waitingId, UpdateWaitingRequest updateWaitingRequest);
+
+    boolean updateWaiting(WaitingStatus newStatus, Waiting waiting);
 
     int getCurrentWaitingTeamCount(Long storeId);
 
