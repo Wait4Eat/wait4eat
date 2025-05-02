@@ -56,7 +56,7 @@ public class SecurityConfig {
                 .logout(AbstractHttpConfigurer::disable)
                 .rememberMe(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/test-sse.html", "/css/**", "/payment/**", "/images/**").permitAll()
+                        .requestMatchers("/test-sse.html", "/css/**", "/payment/**", "/images/**", "/health").permitAll()
                         .requestMatchers("/" + tossWebhookEndpoint).permitAll()
                         .requestMatchers(request -> request.getRequestURI().startsWith("/api/v1/notifications/subscribe")).permitAll()
                         .requestMatchers(request -> request.getRequestURI().startsWith("/api/v1/auth")).permitAll()
