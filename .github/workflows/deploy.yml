@@ -3,7 +3,7 @@ name: CI/CD to EC2 with Docker and ECR
 on:
   push:
     branches:
-      - dev
+      - main
       - feat/#106-cicd-setup
 
 jobs:
