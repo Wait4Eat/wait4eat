@@ -101,7 +101,7 @@ public class TestDataSetup {
         // 인기가게 1
         for (int i = 0; i < 500; i++) {
             Waiting waiting = Waiting.builder()
-                    .store(stores.get(0))
+                    .store(stores.get(1400))
                     .user(users.get(i))
                     .orderId("store" + stores.get(0).getId() + "_user" + users.get(i).getId() + "_order" + (i + 1))
                     .peopleCount(1)
@@ -271,9 +271,11 @@ public class TestDataSetup {
                     .user(waitings.get(i).getUser())
                     .waiting(waitings.get(i))
                     .coupon(coupon)
+                    .orderId(waitings.get(i).toString())
+                    .paymentKey("paymentKey")
                     .originalAmount(BigDecimal.valueOf(5000))
                     .amount(BigDecimal.valueOf(5000).subtract(coupon.getDiscountAmount()))
-                    .status(PaymentStatus.PAID)
+                    .status(PaymentStatus.SUCCEEDED)
                     .paidAt(LocalDateTime.now().minusDays(1))
                     .build();
 

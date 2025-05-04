@@ -22,7 +22,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("""
     SELECT COALESCE(SUM(p.amount), 0)
     FROM Payment p
-    WHERE p.waiting.store = :store AND p.createdAt BETWEEN :startDate AND :endDate
+    WHERE p.waiting.store = :store AND p.paidAt BETWEEN :startDate AND :endDate
     """)
-    BigDecimal sumAmountByStoreAndCreatedAtBetween(Store store, LocalDateTime startDate, LocalDateTime endDate);
+    BigDecimal sumAmountByStoreAndPaidAtBetween(Store store, LocalDateTime startDate, LocalDateTime endDate);
 }

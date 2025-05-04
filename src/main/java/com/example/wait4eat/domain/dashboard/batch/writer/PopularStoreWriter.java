@@ -1,5 +1,6 @@
-package com.example.wait4eat.domain.dashboard.batch;
+package com.example.wait4eat.domain.dashboard.batch.writer;
 
+import com.example.wait4eat.domain.dashboard.batch.DashboardBatchSupport;
 import com.example.wait4eat.domain.dashboard.dto.StoreWaitingStats;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
@@ -37,7 +38,7 @@ public class PopularStoreWriter implements ItemWriter<StoreWaitingStats> {
                 .limit(10)
                 .toList();
 
-        Dashboard dashboard = batchSupport.dashboardRepository
+        Dashboard dashboard = batchSupport.getDashboardRepository()
                 .findByStatisticsDateOrElseThrow(batchSupport.getYesterday());
 
         List<PopularStore> result = new ArrayList<>();
@@ -52,6 +53,6 @@ public class PopularStoreWriter implements ItemWriter<StoreWaitingStats> {
                     .build());
         }
 
-        batchSupport.popularStoreRepository.saveAll(result);
+        batchSupport.getPopularStoreRepository().saveAll(result);
     }
 }
