@@ -1,4 +1,4 @@
-package com.example.wait4eat.domain.dashboard.scheduler;
+package com.example.wait4eat.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

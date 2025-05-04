@@ -1,14 +1,17 @@
 package com.example.wait4eat.domain.dashboard.batch;
 
-import com.example.wait4eat.domain.dashboard.dto.DashboardStatsAccumulator;
+import com.example.wait4eat.domain.dashboard.batch.processor.DashboardProcessorConfig;
+import com.example.wait4eat.domain.dashboard.batch.reader.DashboardReaderConfig;
+import com.example.wait4eat.domain.dashboard.batch.writer.*;
 import com.example.wait4eat.domain.dashboard.repository.DashboardRepository;
 import com.example.wait4eat.domain.dashboard.repository.PopularStoreRepository;
 import com.example.wait4eat.domain.dashboard.repository.StoreSalesRankRepository;
 import com.example.wait4eat.domain.payment.repository.PaymentRepository;
 import com.example.wait4eat.domain.waiting.repository.WaitingRepository;
 import jakarta.persistence.EntityManagerFactory;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.configuration.annotation.JobScope;
+import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -19,32 +22,34 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Component
+@Getter
 @RequiredArgsConstructor
 public class DashboardBatchSupport {
-    protected final JobRepository jobRepository;
-    protected final PlatformTransactionManager transactionManager;
-    protected final EntityManagerFactory entityManagerFactory;
-    protected final PaymentRepository paymentRepository;
-    protected final WaitingRepository waitingRepository;
-    protected final DashboardRepository dashboardRepository;
-    protected final PopularStoreRepository popularStoreRepository;
-    protected final StoreSalesRankRepository storeSalesRankRepository;
+    private final JobRepository jobRepository;
+    private final PlatformTransactionManager transactionManager;
+    private final EntityManagerFactory entityManagerFactory;
+    private final PaymentRepository paymentRepository;
+    private final WaitingRepository waitingRepository;
+    private final DashboardRepository dashboardRepository;
+    private final PopularStoreRepository popularStoreRepository;
+    private final StoreSalesRankRepository storeSalesRankRepository;
 
-    protected LocalDate getYesterday() {
+    public LocalDate getYesterday() {
         return LocalDate.now().minusDays(1);
     }
 
-    protected LocalDateTime getStartDate() {
+    public LocalDateTime getStartDate() {
         return getYesterday().atStartOfDay();
     }
 
-    protected LocalDateTime getEndDate() {
+    public LocalDateTime getEndDate() {
         return getYesterday().atTime(LocalTime.MAX);
     }
 
     @Bean
-    @JobScope
-    protected DashboardStatsAccumulator dashboardStatsAccumulator() {
-        return new DashboardStatsAccumulator();
+    public ExecutionContextPromotionListener executionContextPromotionListener() {
+        ExecutionContextPromotionListener listener = new ExecutionContextPromotionListener();
+        listener.setKeys(new String[]{"totalUserCount", "dailyUserCount", "totalStoreCount", "dailyNewStoreCount", "dailyTotalSales"});
+        return listener;
     }
 }

@@ -1,15 +1,14 @@
-package com.example.wait4eat.domain.dashboard.batch;
+package com.example.wait4eat.domain.dashboard.batch.reader;
 
+import com.example.wait4eat.domain.dashboard.batch.DashboardBatchSupport;
+import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
 import com.example.wait4eat.domain.payment.entity.Payment;
 import com.example.wait4eat.domain.payment.enums.PaymentStatus;
 import com.example.wait4eat.domain.store.entity.Store;
 import com.example.wait4eat.domain.user.entity.User;
 import com.example.wait4eat.domain.user.enums.UserRole;
-import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,10 +21,10 @@ public class DashboardReaderConfig {
     private final DashboardBatchSupport batchSupport;
 
     @Bean
-    public ItemReader<User> userStatsReader(EntityManagerFactory entityManagerFactory) {
+    public ItemReader<User> userStatsReader() {
         return new JpaPagingItemReaderBuilder<User>()
                 .name("userStatsReader")
-                .entityManagerFactory(entityManagerFactory)
+                .entityManagerFactory(batchSupport.getEntityManagerFactory())
                 .queryString("SELECT u FROM User u WHERE u.role = :role")
                 .parameterValues(Map.of("role", UserRole.ROLE_USER))
                 .pageSize(1000)
@@ -33,10 +32,10 @@ public class DashboardReaderConfig {
     }
 
     @Bean
-    public ItemReader<Store> storeStatsReader(EntityManagerFactory entityManagerFactory) {
+    public ItemReader<Store> storeReader() {
         return new JpaPagingItemReaderBuilder<Store>()
                 .name("storeStatsReader")
-                .entityManagerFactory(entityManagerFactory)
+                .entityManagerFactory(batchSupport.getEntityManagerFactory())
                 .queryString("SELECT s FROM Store s")
                 .pageSize(1000)
                 .build();
@@ -46,7 +45,7 @@ public class DashboardReaderConfig {
     public ItemReader<Payment> paymentStatsReader() {
         return new JpaPagingItemReaderBuilder<Payment>()
                 .name("paymentStatsReader")
-                .entityManagerFactory(batchSupport.entityManagerFactory)
+                .entityManagerFactory(batchSupport.getEntityManagerFactory())
                 .queryString("SELECT p FROM Payment p WHERE p.status = :status AND p.paidAt BETWEEN :startDate AND :endDate")
                 .parameterValues(Map.of(
                         "status", PaymentStatus.SUCCEEDED,
@@ -58,12 +57,12 @@ public class DashboardReaderConfig {
     }
 
     @Bean
-    @StepScope
-    public JpaPagingItemReader<Store> storeReader() {
-        return new JpaPagingItemReaderBuilder<Store>()
+    public ItemReader<StoreSalesRank> storeSalesRankReader() {
+        return new JpaPagingItemReaderBuilder<StoreSalesRank>()
                 .name("storeSalesRankReader")
-                .entityManagerFactory(batchSupport.entityManagerFactory)
-                .queryString("SELECT s FROM Store s")
+                .entityManagerFactory(batchSupport.getEntityManagerFactory())
+                .queryString("SELECT s FROM StoreSalesRank s WHERE s.dashboard.statisticsDate = :yesterday ORDER BY s.totalSales DESC")
+                .parameterValues(Map.of("yesterday", batchSupport.getYesterday()))
                 .pageSize(1000)
                 .build();
     }

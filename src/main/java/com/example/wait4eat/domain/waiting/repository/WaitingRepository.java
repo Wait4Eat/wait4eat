@@ -23,5 +23,5 @@ public interface WaitingRepository extends JpaRepository<Waiting, Long>, Waiting
     @Query("select w from Waiting w where w.id = :id")
     Optional<Waiting> findByIdForUpdate(@Param("id") Long id);
 
-    int countByStoreAndCreatedAtBetween(Store store, LocalDateTime start, LocalDateTime end);
+    int countByStoreAndCreatedAtBetweenAndStatus(Store store, LocalDateTime start, LocalDateTime end, WaitingStatus status);
 }
