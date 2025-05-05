@@ -11,14 +11,14 @@ import java.util.List;
 public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, String> {
 
     @Query(value = """
-                SELECT * FROM outbox_messages
-                WHERE status = 'FAILED'
-                AND retry_count < :maxRetry
-                ORDER BY created_at ASC
-                LIMIT :limit
-            """,
-            nativeQuery = true)
-    List<OutboxMessage> findFailedOutboxByRetryCountLessThanOrderByCreatedAtDesc(int maxRetry, int limit);
+    SELECT * FROM outbox_messages
+    WHERE status IN ('FAILED', 'PENDING')
+    AND retry_count < :maxRetry
+    ORDER BY created_at ASC
+    LIMIT :limit
+    """, nativeQuery = true)
+    List<OutboxMessage> findRetryableOutboxMessages(int maxRetry, int limit);
+
 
     @Modifying
     @Query("UPDATE OutboxMessage o SET o.status = 'SENT', o.sentAt = :now WHERE o.id IN :ids")
