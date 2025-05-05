@@ -35,6 +35,7 @@ public class UserStatsWriter implements ItemWriter<User>, StepExecutionListener 
     }
 
     private boolean isLoggedInYesterday(User user) {
-        return user.getLastLoginDate().equals(LocalDate.now().minusDays(1));
+        LocalDate lastLoginDate = user.getLastLoginDate();
+        return lastLoginDate != null && lastLoginDate.equals(LocalDate.now().minusDays(1));
     }
 }
