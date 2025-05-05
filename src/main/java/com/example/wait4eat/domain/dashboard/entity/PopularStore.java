@@ -1,6 +1,5 @@
 package com.example.wait4eat.domain.dashboard.entity;
 
-import com.example.wait4eat.domain.dashboard.enums.PopularityType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -41,7 +40,6 @@ public class PopularStore {
             String storeName,
             Long waitingCount,
             int ranking,
-            PopularityType type,
             Dashboard dashboard
     ) {
         this.storeId = storeId;
