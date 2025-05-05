@@ -10,6 +10,8 @@ public enum ExceptionType {
     REQUEST_VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "요청값 검증에 실패했습니다."),
     REQUEST_FORMAT_INVALID(HttpStatus.BAD_REQUEST, "요청 형식이 올바르지 않습니다. "),
     INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "올바르지 않은 요청입니다"),
+    INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "시작일은 종료일보다 이후일 수 없습니다."),
+
 
     // Auth
     AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
