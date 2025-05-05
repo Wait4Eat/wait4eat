@@ -30,7 +30,7 @@ public class OpenAiService {
         Map<String, Object> requestBody = Map.of(
                 "model", "gpt-3.5-turbo",
                 "messages", List.of(
-                        Map.of("role", "system", "content", "다음 메시지에 욕설이나 부적절한 표현이 포함되어 있는지 판단해서 true 또는 false로만 대답해줘."),
+                        Map.of("role", "system", "content", "다음 메시지에 욕설, 부적절하거나 폭력적인 표현이 포함되어 있는지 판단해서 true 또는 false로만 대답해줘."),
                         Map.of("role", "user", "content", content)
                 ),
                 "max_tokens", 10,
