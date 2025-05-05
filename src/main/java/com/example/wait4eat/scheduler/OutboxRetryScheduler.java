@@ -30,7 +30,7 @@ public class OutboxRetryScheduler { // TODO : 여러 인스턴스에서 동시�
     @Scheduled(fixedRate = 10000)
     public void retry() {
         List<OutboxMessage> messages = outboxMessageRepository
-                .findFailedOutboxByRetryCountLessThanOrderByCreatedAtDesc(
+                .findRetryableOutboxMessages(
                         MAX_RETRY_COUNT,
                         BATCH_SIZE
                 );
