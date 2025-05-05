@@ -1,6 +1,7 @@
 package com.example.wait4eat.domain.dashboard.controller;
 
 import com.example.wait4eat.domain.dashboard.dto.DashboardResponse;
+import com.example.wait4eat.domain.dashboard.dto.StoreSalesRankResponse;
 import com.example.wait4eat.domain.dashboard.service.DashboardService;
 import com.example.wait4eat.domain.user.enums.UserRole;
 import com.example.wait4eat.global.dto.response.PageResponse;
@@ -31,5 +32,14 @@ public class DashboardController {
     ) {
         Page<DashboardResponse> allDashboard = dashboardService.getAllDashboard(startDate, endDate, pageable);
         return ResponseEntity.ok(PageResponse.from(allDashboard));
+    }
+
+    @Secured(UserRole.Authority.ADMIN)
+    @GetMapping("/api/v1/salesranks")
+    public ResponseEntity<PageResponse<StoreSalesRankResponse>> getSalesRanks(
+            @RequestParam(name = "targetDate") LocalDate targetDate,
+            @PageableDefault(page = 0, size = 10, sort = "ranking") Pageable pageable
+    ) {
+        return ResponseEntity.ok(PageResponse.from(dashboardService.getStoreSalesRanks(targetDate, pageable)));
     }
 }

@@ -2,8 +2,10 @@ package com.example.wait4eat.domain.dashboard.service;
 
 import com.example.wait4eat.domain.dashboard.dto.DashboardResponse;
 import com.example.wait4eat.domain.dashboard.dto.PopularStoreResponse;
+import com.example.wait4eat.domain.dashboard.dto.StoreSalesRankResponse;
 import com.example.wait4eat.domain.dashboard.entity.Dashboard;
 import com.example.wait4eat.domain.dashboard.entity.PopularStore;
+import com.example.wait4eat.domain.dashboard.entity.StoreSalesRank;
 import com.example.wait4eat.domain.dashboard.repository.DashboardRepository;
 import com.example.wait4eat.domain.dashboard.repository.PopularStoreRepository;
 import com.example.wait4eat.domain.dashboard.repository.StoreSalesRankRepository;
@@ -57,5 +59,10 @@ public class DashboardService {
         });
     }
 
-
+    @Transactional(readOnly = true)
+    public Page<StoreSalesRankResponse> getStoreSalesRanks(LocalDate targetDate, Pageable pageable) {
+        Dashboard findDashboard = dashboardRepository.findByStatisticsDateOrElseThrow(targetDate);
+        Page<StoreSalesRank> storeSalesRanks = storeSalesRankRepository.findByDashboardOrderByRanking(findDashboard, pageable);
+        return storeSalesRanks.map(StoreSalesRankResponse::from);
+    }
 }
