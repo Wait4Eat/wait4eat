@@ -32,7 +32,8 @@
 ## ⚙️ System Architecture
 
 ### ☁️ Cloud Architecture
-![wait4eat 아키텍처 (1)](https://github.com/user-attachments/assets/6f19fa3b-c0e9-40df-bfc2-d2d632d7d97c)
+![Uploading wait4eat 아키텍처 (2).jpg…]()
+
 
 ---
 
