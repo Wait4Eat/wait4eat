@@ -12,7 +12,7 @@ public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, St
 
     @Query(value = """
     SELECT * FROM outbox_messages
-    WHERE status IN ('FAILED', 'PENDING')
+    WHERE status IN ('FAILED')
     AND retry_count < :maxRetry
     ORDER BY created_at ASC
     LIMIT :limit
