@@ -32,7 +32,7 @@ public class OutboxMessage {
     @Column
     private String aggregateId;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String payload;
 
     @Column(nullable = false)
