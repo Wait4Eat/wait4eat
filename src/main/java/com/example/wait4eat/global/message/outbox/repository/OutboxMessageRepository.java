@@ -19,7 +19,6 @@ public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, St
     """, nativeQuery = true)
     List<OutboxMessage> findRetryableOutboxMessages(int maxRetry, int limit);
 
-
     @Modifying
     @Query("UPDATE OutboxMessage o SET o.status = 'SENT', o.sentAt = :now WHERE o.id IN :ids")
     int markAllAsSent(List<String> ids, LocalDateTime now);
@@ -28,5 +27,8 @@ public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, St
     @Query("UPDATE OutboxMessage o SET o.status = 'FAILED' WHERE o.id IN :ids")
     int markAllAsFailed(List<String> ids);
 
-   // boolean existsByIdAndIsProcessed(String messageKey, boolean isProcessed);
+    @Modifying
+    @Query("update OutboxMessage o set o.status = 'FAILED' where o.status = 'PENDING' and o.createdAt < :threshold")
+    int markPendingAsFailedBefore(LocalDateTime threshold);
+
 }

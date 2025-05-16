@@ -1,57 +1,37 @@
 package com.example.wait4eat.global.message.outbox.service;
 
-import com.example.wait4eat.global.message.publisher.MessagePublisher;
 import com.example.wait4eat.global.message.outbox.entity.OutboxMessage;
-import com.example.wait4eat.global.message.outbox.repository.OutboxMessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 직접적으로 message publisher에 요청하는 역할
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OutboxProcessor {
 
-    private final MessagePublisher publisher;
-    private final OutboxMessageRepository outboxMessageRepository;
-    private final AggregateQueueMapper aggregateQueueMapper;
+    private final OutboxPublisher outboxPublisher;
+    static final int BATCH_SIZE = 100;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void process(List<OutboxMessage> messages) {
+        List<List<OutboxMessage>> batches = partition(messages);
 
-        List<String> successIds = new ArrayList<>();
-        List<String> failedIds = new ArrayList<>();
-
-        for (OutboxMessage message : messages) {
-            try {
-                String payload = message.getPayload();
-                String aggregateType = message.getAggregateType();
-
-                String queueName = aggregateQueueMapper.getQueueName(aggregateType);
-                publisher.publish(queueName, payload);
-
-                successIds.add(message.getId());
-            } catch (Exception e) {
-                failedIds.add(message.getId());
-                log.warn("즉시 발송 실패: type={}, reason={}",
-                        message.getAggregateType(), e.getMessage());
-            }
+        for (List<OutboxMessage> batch : batches) {
+            outboxPublisher.publishBatch(batch);
         }
+    }
 
-        if (!successIds.isEmpty()) {
-            outboxMessageRepository.markAllAsSent(successIds, LocalDateTime.now());
+    private List<List<OutboxMessage>> partition(List<OutboxMessage> messages) {
+        List<List<OutboxMessage>> result = new ArrayList<>();
+        for (int i = 0; i < messages.size(); i += BATCH_SIZE) {
+            result.add(messages.subList(i, Math.min(i + BATCH_SIZE, messages.size())));
         }
-        if (!failedIds.isEmpty()) {
-            outboxMessageRepository.markAllAsFailed(failedIds);
-        }
+        return result;
     }
 }
