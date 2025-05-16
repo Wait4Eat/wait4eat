@@ -11,7 +11,7 @@ public class IdGenerator {
     }
 
     public static String generateNotificationId() {
-        return UUID.randomUUID().toString().substring(0,8);
+        return UUID.randomUUID().toString();
     }
 
 }
