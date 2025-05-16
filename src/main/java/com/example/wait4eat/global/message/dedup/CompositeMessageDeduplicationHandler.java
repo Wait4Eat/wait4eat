@@ -33,6 +33,6 @@ public class CompositeMessageDeduplicationHandler implements MessageDeduplicatio
             throw new RuntimeException(e); // 재시도 유도
         }
 
-        log.info("messageKey 처리 마킹 완료: {}", messageKey);
+        // log.info("messageKey 처리 마킹 완료: {}", messageKey);
     }
 }
