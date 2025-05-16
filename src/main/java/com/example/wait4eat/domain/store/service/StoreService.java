@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,7 +33,7 @@ public class StoreService {
 
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
-    private final StoreSearchRepository storeSearchRepository;
+    private final Optional<StoreSearchRepository> storeSearchRepository;
 
     @Transactional
     public CreateStoreResponse create(AuthUser authUser, CreateStoreRequest request) {
@@ -58,7 +59,7 @@ public class StoreService {
         Store savedStore = storeRepository.save(store);
 
         // Elasticsearch 에도 저장
-        storeSearchRepository.save(StoreDocument.from(savedStore));
+        storeSearchRepository.ifPresent(repo -> repo.save(StoreDocument.from(savedStore)));
 
         return CreateStoreResponse.of(savedStore, user);
     }
@@ -91,6 +92,10 @@ public class StoreService {
 
     @Transactional(readOnly = true)
     public Page<GetStoreListResponse> getStoreListByEs(SearchStoreRequest request) {
+        if (storeSearchRepository.isEmpty()) {
+            throw new CustomException(ExceptionType.INTERNAL_SERVER_ERROR, "ElasticSearch Not Available");
+        }
+
         Pageable pageable = PageRequest.of(
                 request.getPage(),
                 request.getSize(),
@@ -101,7 +106,7 @@ public class StoreService {
                 )
         );
 
-        Page<StoreDocument> searchResult = storeSearchRepository.searchStores(request, pageable);
+        Page<StoreDocument> searchResult = storeSearchRepository.get().searchStores(request, pageable);
 
         return searchResult.map(GetStoreListResponse::from);
     }
